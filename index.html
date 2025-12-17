@@ -1,94 +1,60 @@
 <!DOCTYPE html>
 <html lang="vi">
-<head>
-  <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, user-scalable=no"
-  />
-  <title>MindAR + Three.js Image Tracking</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindAR Image + Text 3D</title>
 
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background: black;
-    }
-    #container {
-      width: 100%;
-      height: 100%;
-    }
-  </style>
-</head>
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
 
-<body>
-  <div id="container"></div>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
-  <!-- Three.js -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+    <style>
+      body { margin: 0; overflow: hidden; }
+      /* Hiển thị thông báo đang tải */
+      #scanning-overlay {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        z-index: 100;
+      }
+    </style>
+  </head>
 
-  <!-- MindAR Three.js -->
-  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"></script>
+  <body>
+    <div id="scanning-overlay">Đang tải Camera và Dữ liệu...</div>
 
-  <script>
-    const start = async () => {
+    <a-scene
+      mindar-image="imageTargetSrc: ./targets.mind; autoStart: true; uiScanning: #scanning-overlay;"
+      color-space="sRGB"
+      renderer="colorManagement: true, physicallyCorrectLights"
+      vr-mode-ui="enabled: false"
+      device-orientation-permission-ui="enabled: true"
+      embedded
+    >
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      // 1️⃣ Khởi tạo MindAR
-      const mindarThree = new window.MINDAR.IMAGE.MindARThree({
-        container: document.querySelector("#container"),
-        imageTargetSrc: "targets.mind",
-      });
+      <a-entity mindar-image-target="targetIndex: 0">
+        
+        <a-text
+          value="PHONG TRUYEN THONG\nThanh lap nam 1965"
+          font="https://cdn.aframe.io/fonts/DejaVu-sdf.fnt"
+          color="#FFD700"
+          align="center"
+          width="3"
+          position="0 0.4 0"
+          rotation="0 0 0"
+        ></a-text>
 
-      const { renderer, scene, camera } = mindarThree;
+        </a-entity>
 
-      // 2️⃣ Ánh sáng (bắt buộc, không có là thấy đen)
-      const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
-      scene.add(light);
-
-      // 3️⃣ Anchor cho targetIndex = 0
-      const anchor = mindarThree.addAnchor(0);
-
-      // 4️⃣ Text 3D (dùng Plane + CanvasTexture cho chắc chắn)
-      const canvas = document.createElement("canvas");
-      canvas.width = 512;
-      canvas.height = 256;
-
-      const ctx = canvas.getContext("2d");
-      ctx.fillStyle = "rgba(0,0,0,0.6)";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      ctx.fillStyle = "#00ff00";
-      ctx.font = "bold 48px Arial";
-      ctx.textAlign = "center";
-      ctx.fillText("PHÒNG TRUYỀN THỐNG", 256, 110);
-      ctx.font = "32px Arial";
-      ctx.fillText("Thành lập năm 1965", 256, 170);
-
-      const texture = new THREE.CanvasTexture(canvas);
-
-      const geometry = new THREE.PlaneGeometry(1.2, 0.6);
-      const material = new THREE.MeshBasicMaterial({
-        map: texture,
-        transparent: true,
-      });
-
-      const plane = new THREE.Mesh(geometry, material);
-      plane.position.set(0, 0.3, 0);
-
-      anchor.group.add(plane);
-
-      // 5️⃣ Start AR
-      await mindarThree.start();
-
-      renderer.setAnimationLoop(() => {
-        renderer.render(scene, camera);
-      });
-    };
-
-    start();
-  </script>
-</body>
+    </a-scene>
+  </body>
 </html>
