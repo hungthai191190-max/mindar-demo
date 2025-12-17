@@ -2,16 +2,34 @@
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MindAR Image + Text 3D</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>MindAR Fullscreen Fix</title>
 
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
-      body { margin: 0; overflow: hidden; }
-      /* Hiển thị thông báo đang tải */
+      /* Sửa lỗi hiển thị 1 nửa màn hình */
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+      }
+      
+      /* Ép A-Scene bao phủ toàn bộ */
+      a-scene {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 1;
+      }
+
+      /* Tùy chỉnh giao diện Loading */
       #scanning-overlay {
         display: flex;
         align-items: center;
@@ -21,39 +39,46 @@
         right: 0;
         top: 0;
         bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
+        background: rgba(0, 0, 0, 0.8);
         color: white;
-        z-index: 100;
+        z-index: 999;
+        font-family: sans-serif;
+        text-align: center;
+        padding: 20px;
+      }
+      
+      /* Ẩn overlay khi đã load xong (MindAR tự xử lý class .hidden) */
+      #scanning-overlay.hidden {
+        display: none;
       }
     </style>
   </head>
 
   <body>
-    <div id="scanning-overlay">Đang tải Camera và Dữ liệu...</div>
+    <div id="scanning-overlay">Đang khởi động Camera...<br>Vui lòng đợi!</div>
 
     <a-scene
-      mindar-image="imageTargetSrc: ./targets.mind; autoStart: true; uiScanning: #scanning-overlay;"
+      mindar-image="imageTargetSrc: ./targets.mind; uiScanning: #scanning-overlay; filterMinCF:0.0001; filterBeta: 0.001;"
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights"
       vr-mode-ui="enabled: false"
-      device-orientation-permission-ui="enabled: true"
+      device-orientation-permission-ui="enabled: false"
       embedded
     >
+      
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0">
+        <a-plane color="black" opacity="0.7" width="2.2" height="0.8" position="0 0.2 -0.01"></a-plane>
         
         <a-text
-          value="PHONG TRUYEN THONG\nThanh lap nam 1965"
-          font="https://cdn.aframe.io/fonts/DejaVu-sdf.fnt"
+          value="PHONG TRUYEN THONG\n1965"
           color="#FFD700"
           align="center"
-          width="3"
-          position="0 0.4 0"
-          rotation="0 0 0"
+          width="4"
+          position="0 0.2 0"
         ></a-text>
-
-        </a-entity>
+      </a-entity>
 
     </a-scene>
   </body>
