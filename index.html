@@ -2,8 +2,11 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>MindAR Image + Text 3D</title>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, user-scalable=no"
+  />
+  <title>MindAR + Three.js Image Tracking</title>
 
   <style>
     html, body {
@@ -12,44 +15,80 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background: #000;
+      background: black;
     }
-    a-scene {
+    #container {
       width: 100%;
       height: 100%;
     }
   </style>
-
-  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 </head>
 
 <body>
-  <a-scene
-    mindar-image="
-      imageTargetSrc: targets.mind;
-      autoStart: true;
-      filterMinCF: 0.0001;
-      filterBeta: 0.001;
-    "
-    embedded
-    vr-mode-ui="enabled: false"
-    device-orientation-permission-ui="enabled: true"
-    renderer="alpha: false; antialias: true; colorManagement: true;"
-    background="color: #000000"
-  >
-    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+  <div id="container"></div>
 
-    <a-entity mindar-image-target="targetIndex: 0">
-      <a-text
-        value="TARGET 0 OK"
-        color="#00ff00"
-        align="center"
-        width="3"
-        position="0 0.25 0"
-        rotation="-90 0 0"
-      ></a-text>
-    </a-entity>
-  </a-scene>
+  <!-- Three.js -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+
+  <!-- MindAR Three.js -->
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"></script>
+
+  <script>
+    const start = async () => {
+
+      // 1️⃣ Khởi tạo MindAR
+      const mindarThree = new window.MINDAR.IMAGE.MindARThree({
+        container: document.querySelector("#container"),
+        imageTargetSrc: "targets.mind",
+      });
+
+      const { renderer, scene, camera } = mindarThree;
+
+      // 2️⃣ Ánh sáng (bắt buộc, không có là thấy đen)
+      const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+      scene.add(light);
+
+      // 3️⃣ Anchor cho targetIndex = 0
+      const anchor = mindarThree.addAnchor(0);
+
+      // 4️⃣ Text 3D (dùng Plane + CanvasTexture cho chắc chắn)
+      const canvas = document.createElement("canvas");
+      canvas.width = 512;
+      canvas.height = 256;
+
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "rgba(0,0,0,0.6)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "#00ff00";
+      ctx.font = "bold 48px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText("PHÒNG TRUYỀN THỐNG", 256, 110);
+      ctx.font = "32px Arial";
+      ctx.fillText("Thành lập năm 1965", 256, 170);
+
+      const texture = new THREE.CanvasTexture(canvas);
+
+      const geometry = new THREE.PlaneGeometry(1.2, 0.6);
+      const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        transparent: true,
+      });
+
+      const plane = new THREE.Mesh(geometry, material);
+      plane.position.set(0, 0.3, 0);
+
+      anchor.group.add(plane);
+
+      // 5️⃣ Start AR
+      await mindarThree.start();
+
+      renderer.setAnimationLoop(() => {
+        renderer.render(scene, camera);
+      });
+    };
+
+    start();
+  </script>
 </body>
 </html>
