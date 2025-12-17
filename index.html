@@ -3,101 +3,93 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>MindAR Fix Loading</title>
+    <title>MindAR Fix Overlay</title>
 
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
-      body { margin: 0; overflow: hidden; }
+      /* Sửa lỗi hiển thị 1 nửa màn hình */
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+      }
       
-      /* Màn hình chờ và Nút bấm */
-      #overlay {
+      /* Ép A-Scene bao phủ toàn bộ */
+      a-scene {
+        width: 100%;
+        height: 100%;
         position: absolute;
-        z-index: 1000;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.85);
+        top: 0;
+        left: 0;
+        z-index: 1;
+      }
+
+      /* Tùy chỉnh giao diện Loading */
+      #scanning-overlay {
         display: flex;
-        flex-direction: column;
-        justify-content: center;
         align-items: center;
+        justify-content: center;
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
         color: white;
+        z-index: 999;
         font-family: sans-serif;
         text-align: center;
+        padding: 20px;
       }
       
-      #start-btn {
-        padding: 12px 24px;
-        background: #007bff;
-        border: none;
-        border-radius: 5px;
-        color: white;
-        font-size: 18px;
-        cursor: pointer;
-        margin-top: 20px;
-        font-weight: bold;
+      /* Class để ẩn overlay vĩnh viễn */
+      .hidden {
+        display: none !important;
       }
-      
-      #status-text { margin-bottom: 10px; font-size: 16px; padding: 0 20px; }
-      
-      /* Ẩn khi AR đã sẵn sàng */
-      .hidden { display: none !important; }
     </style>
   </head>
 
   <body>
-    <div id="overlay">
-      <div id="status-text">Chào mừng đến với Phòng Truyền Thống Ảo</div>
-      <button id="start-btn">BẮT ĐẦU TRẢI NGHIỆM</button>
-    </div>
+    <div id="scanning-overlay">Đang khởi động Camera...<br>Vui lòng đợi!</div>
 
     <a-scene
-      mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; filterMinCF:0.0001; filterBeta: 0.001;"
+      mindar-image="imageTargetSrc: ./targets.mind; filterMinCF:0.0001; filterBeta: 0.001;"
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights"
       vr-mode-ui="enabled: false"
       device-orientation-permission-ui="enabled: false"
       embedded
     >
+      
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0">
-        <a-plane color="black" opacity="0.6" width="2" height="0.8" position="0 0.2 -0.01"></a-plane>
-        <a-text value="PHONG TRUYEN THONG\n1965" color="#FFD700" align="center" width="4" position="0 0.2 0"></a-text>
+        <a-plane color="black" opacity="0.7" width="2.2" height="0.8" position="0 0.2 -0.01"></a-plane>
+        
+        <a-text
+          value="PHONG TRUYEN THONG\n1990"
+          color="#FFD700"
+          align="center"
+          width="4"
+          position="0 0.2 0"
+        ></a-text>
       </a-entity>
+
     </a-scene>
 
     <script>
       const sceneEl = document.querySelector('a-scene');
-      const overlay = document.querySelector('#overlay');
-      const startBtn = document.querySelector('#start-btn');
-      const statusText = document.querySelector('#status-text');
+      const overlay = document.querySelector('#scanning-overlay');
 
-      // 1. Xử lý sự kiện bấm nút Start
-      startBtn.addEventListener('click', () => {
-        statusText.innerText = "Đang xin quyền Camera...";
-        startBtn.style.display = 'none'; // Ẩn nút để tránh bấm lại
-        
-        // Ra lệnh cho MindAR bắt đầu
-        sceneEl.systems['mindar-image-system'].start();
-      });
-
-      // 2. Lắng nghe sự kiện AR Sẵn sàng (arReady)
+      // Lắng nghe sự kiện 'arReady' (Khi camera đã mở thành công)
       sceneEl.addEventListener("arReady", (event) => {
-        console.log("MindAR is ready");
-        statusText.innerText = "Đã xong! Hãy quét ảnh.";
-        setTimeout(() => {
-          overlay.classList.add('hidden'); // Ẩn màn hình chờ
-        }, 1000);
-      });
-
-      // 3. Lắng nghe sự kiện Lỗi (arError)
-      sceneEl.addEventListener("arError", (event) => {
-        console.error("MindAR Error:", event);
-        statusText.style.color = "red";
-        statusText.innerText = "LỖI: Không thể mở Camera hoặc file bị lỗi.\nVui lòng kiểm tra lại quyền truy cập!";
-        startBtn.style.display = 'block'; // Hiện lại nút để thử lại
-        startBtn.innerText = "Thử lại";
+        console.log("MindAR is ready - Hiding overlay");
+        // Ẩn màn hình chờ đi vĩnh viễn
+        overlay.classList.add('hidden');
       });
     </script>
   </body>
