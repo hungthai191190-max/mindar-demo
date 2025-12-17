@@ -1,43 +1,65 @@
 <!DOCTYPE html>
 <html lang="vi">
-  <head>
-    <meta charset="UTF-8" />
-    <title>MindAR Image + Text 3D</title>
+<head>
+  <meta charset="UTF-8" />
+  <title>MindAR Image Tracking Demo</title>
 
-    <!-- A-Frame -->
-    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <!-- BẮT BUỘC: CSS FULL SCREEN -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+    }
+    a-scene {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
 
-    <!-- MindAR for A-Frame -->
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-  </head>
+  <!-- A-Frame -->
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
 
-  <body style="margin: 0; overflow: hidden">
+  <!-- MindAR A-Frame (đúng theo doc chính thức) -->
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+</head>
 
-    <a-scene
-      mindar-image="imageTargetSrc: targets.mind;"
-      vr-mode-ui="enabled: false"
-      device-orientation-permission-ui="enabled: true"
-      embedded
-    >
+<body>
 
-      <!-- Camera -->
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+  <a-scene
+    mindar-image="imageTargetSrc: targets.mind; autoStart: true;"
+    embedded
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: true"
+  >
 
-      <!-- Image Target index 0 -->
-      <a-entity mindar-image-target="targetIndex: 0">
+    <!-- CAMERA -->
+    <a-camera
+      position="0 0 0"
+      look-controls="enabled: false"
+    ></a-camera>
 
-        <!-- Text 3D -->
-        <a-text
-          value="PHÒNG TRUYỀN THỐNG\nThành lập năm 1965"
-          color="#ffffff"
-          align="center"
-          width="2"
-          position="0 0.2 0"
-          rotation="-90 0 0"
-        ></a-text>
+    <!-- TARGET 0 -->
+    <a-entity mindar-image-target="targetIndex: 0">
 
-      </a-entity>
+      <!-- TEXT 3D -->
+      <a-text
+        value="PHÒNG TRUYỀN THỐNG\nThành lập năm 1965"
+        color="#ffffff"
+        align="center"
+        width="2.5"
+        position="0 0.25 0"
+        rotation="-90 0 0"
+      ></a-text>
 
-    </a-scene>
-  </body>
+    </a-entity>
+
+  </a-scene>
+
+</body>
 </html>
+
