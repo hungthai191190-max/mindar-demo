@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>AR Camera Always On</title>
+    <title>MindAR Fix Loading</title>
 
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
@@ -11,12 +11,12 @@
     <style>
       body { margin: 0; overflow: hidden; }
       
-      /* Màn hình chờ lúc đầu */
+      /* Màn hình chờ và Nút bấm */
       #overlay {
         position: absolute;
         z-index: 1000;
         top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.9); /* Nền đen lúc đầu */
+        background: rgba(0,0,0,0.85);
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -24,7 +24,6 @@
         color: white;
         font-family: sans-serif;
         text-align: center;
-        transition: opacity 0.5s; /* Hiệu ứng mờ dần khi tắt */
       }
       
       #start-btn {
@@ -41,18 +40,15 @@
       
       #status-text { margin-bottom: 10px; font-size: 16px; padding: 0 20px; }
       
-      /* Class để ẩn overlay vĩnh viễn */
-      .hidden { 
-        opacity: 0; 
-        pointer-events: none; /* Cho phép bấm xuyên qua lớp đã ẩn */
-      }
+      /* Ẩn khi AR đã sẵn sàng */
+      .hidden { display: none !important; }
     </style>
   </head>
 
   <body>
     <div id="overlay">
-      <div id="status-text">Sẵn sàng trải nghiệm AR</div>
-      <button id="start-btn">BẮT ĐẦU</button>
+      <div id="status-text">Chào mừng đến với Phòng Truyền Thống Ảo</div>
+      <button id="start-btn">BẮT ĐẦU TRẢI NGHIỆM</button>
     </div>
 
     <a-scene
@@ -67,7 +63,7 @@
 
       <a-entity mindar-image-target="targetIndex: 0">
         <a-plane color="black" opacity="0.6" width="2" height="0.8" position="0 0.2 -0.01"></a-plane>
-        <a-text value="PHONG TRUYEN THONG\n1990" color="#FFD700" align="center" width="4" position="0 0.2 0"></a-text>
+        <a-text value="PHONG TRUYEN THONG\n1965" color="#FFD700" align="center" width="4" position="0 0.2 0"></a-text>
       </a-entity>
     </a-scene>
 
@@ -77,41 +73,30 @@
       const startBtn = document.querySelector('#start-btn');
       const statusText = document.querySelector('#status-text');
 
-      // 1. Xử lý nút Bấm để bắt đầu
+      // 1. Xử lý sự kiện bấm nút Start
       startBtn.addEventListener('click', () => {
-        statusText.innerText = "Đang mở Camera...";
-        startBtn.style.display = 'none';
+        statusText.innerText = "Đang xin quyền Camera...";
+        startBtn.style.display = 'none'; // Ẩn nút để tránh bấm lại
+        
+        // Ra lệnh cho MindAR bắt đầu
         sceneEl.systems['mindar-image-system'].start();
       });
 
-      // 2. Khi Camera đã sẵn sàng (arReady) -> Ẩn Overlay VĨNH VIỄN
+      // 2. Lắng nghe sự kiện AR Sẵn sàng (arReady)
       sceneEl.addEventListener("arReady", (event) => {
         console.log("MindAR is ready");
-        // Thêm class hidden để làm mờ overlay
-        overlay.classList.add('hidden');
-        // Xóa hẳn overlay khỏi màn hình sau 0.5s
+        statusText.innerText = "Đã xong! Hãy quét ảnh.";
         setTimeout(() => {
-            overlay.style.display = 'none'; 
-        }, 500);
+          overlay.classList.add('hidden'); // Ẩn màn hình chờ
+        }, 1000);
       });
 
-      // 3. (Tùy chọn) Log ra console để biết khi nào tìm thấy/mất dấu
-      // Nhưng KHÔNG làm gì với giao diện cả, camera vẫn chạy nền.
-      const target = document.querySelector('[mindar-image-target]');
-      
-      target.addEventListener("targetFound", event => {
-        console.log("Đã tìm thấy ảnh target");
-      });
-
-      target.addEventListener("targetLost", event => {
-        console.log("Đã mất dấu ảnh target - Camera vẫn mở bình thường");
-      });
-
-      // 4. Báo lỗi nếu không mở được camera
+      // 3. Lắng nghe sự kiện Lỗi (arError)
       sceneEl.addEventListener("arError", (event) => {
+        console.error("MindAR Error:", event);
         statusText.style.color = "red";
-        statusText.innerText = "LỖI: Không mở được Camera.";
-        startBtn.style.display = 'block';
+        statusText.innerText = "LỖI: Không thể mở Camera hoặc file bị lỗi.\nVui lòng kiểm tra lại quyền truy cập!";
+        startBtn.style.display = 'block'; // Hiện lại nút để thử lại
         startBtn.innerText = "Thử lại";
       });
     </script>
