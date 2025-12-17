@@ -3,16 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>MindAR + A-Frame Debug</title>
+  <title>MindAR Image + Text 3D</title>
 
   <style>
-    html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#000; }
-    a-scene { width:100%; height:100%; }
-    #log {
-      position: fixed; left: 10px; right: 10px; bottom: 10px;
-      background: rgba(0,0,0,0.6); color: #0f0; padding: 8px 10px;
-      font: 12px/1.4 monospace; z-index: 9999; border-radius: 8px;
-      max-height: 35vh; overflow:auto;
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+    }
+    a-scene {
+      width: 100%;
+      height: 100%;
     }
   </style>
 
@@ -21,15 +25,18 @@
 </head>
 
 <body>
-  <div id="log">Log:</div>
-
   <a-scene
-    mindar-image="imageTargetSrc: targets.mind; autoStart: true;"
+    mindar-image="
+      imageTargetSrc: targets.mind;
+      autoStart: true;
+      filterMinCF: 0.0001;
+      filterBeta: 0.001;
+    "
     embedded
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: true"
-    renderer="alpha: true; antialias: true"
-    background="transparent: true"
+    renderer="alpha: false; antialias: true; colorManagement: true;"
+    background="color: #000000"
   >
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
@@ -44,29 +51,5 @@
       ></a-text>
     </a-entity>
   </a-scene>
-
-  <script>
-    const logEl = document.getElementById('log');
-    const log = (m) => { logEl.innerHTML += `<br>${m}`; console.log(m); };
-
-    const sceneEl = document.querySelector('a-scene');
-
-    // MindAR system events (để biết start OK hay fail)
-    sceneEl.addEventListener("arReady", () => log("arReady: MindAR started"));
-    sceneEl.addEventListener("arError", (e) => log("arError: " + (e?.detail ? JSON.stringify(e.detail) : "unknown")));
-
-    // A-Frame render events
-    sceneEl.addEventListener("loaded", () => log("scene loaded"));
-
-    // Simple WebGL sanity check
-    try {
-      const c = document.createElement('canvas');
-      const gl = c.getContext('webgl2') || c.getContext('webgl');
-      log("WebGL context: " + (gl ? "OK" : "FAILED"));
-    } catch (e) {
-      log("WebGL check error: " + e.message);
-    }
-  </script>
 </body>
 </html>
-
