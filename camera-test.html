@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <style>
+    html, body { margin:0; padding:0; height:100%; background:#000; }
+    video { width:100%; height:100%; object-fit:cover; }
+  </style>
+</head>
+<body>
+  <video id="v" autoplay playsinline muted></video>
+  <script>
+    (async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+          audio: false
+        });
+        const v = document.getElementById("v");
+        v.srcObject = stream;
+      } catch (e) {
+        alert("Camera error: " + e.name + " - " + e.message);
+        console.error(e);
+      }
+    })();
+  </script>
+</body>
+</html>
