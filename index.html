@@ -6,49 +6,28 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
   />
-  <title>MindAR – Text & 3D Reveal</title>
+  <title>MindAR – Text + 3D + Video</title>
 
-  <!-- A-Frame + MindAR -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-
-  <!-- Troika Text (hỗ trợ tiếng Việt có dấu) -->
   <script src="https://unpkg.com/aframe-troika-text/dist/aframe-troika-text.min.js"></script>
 
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+    a-scene { width: 100%; height: 100%; position: absolute; inset: 0; }
+    #scanning-overlay{
+      position:absolute; inset:0; z-index:999;
+      background:rgba(0,0,0,.85); color:#fff;
+      display:flex; align-items:center; justify-content:center;
+      text-align:center; font-family:sans-serif;
+      padding: 20px;
     }
-    a-scene {
-      width: 100%;
-      height: 100%;
-      position: absolute;
-      inset: 0;
-    }
-    #scanning-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(0,0,0,0.85);
-      color: #fff;
-      z-index: 999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      font-family: sans-serif;
-    }
-    .hidden { display: none !important; }
+    .hidden{ display:none !important; }
   </style>
 </head>
 
 <body>
-  <div id="scanning-overlay">
-    Đang khởi động Camera…<br/>Vui lòng đợi!
-  </div>
+  <div id="scanning-overlay">Đang khởi động Camera…<br/>Vui lòng đợi!</div>
 
   <a-scene
     mindar-image="imageTargetSrc: ./targets.mind; filterMinCF:0.0001; filterBeta:0.001;"
@@ -58,70 +37,51 @@
     device-orientation-permission-ui="enabled: false"
     embedded
   >
-
     <a-assets>
       <audio id="audio1" src="audio1.mp3" preload="auto"></audio>
       <audio id="audio2" src="audio2.mp3" preload="auto"></audio>
+
+      <!-- Video: muted + playsinline để autoplay trên mobile -->
+      <video
+        id="video1"
+        src="video1.mp4"
+        preload="auto"
+        loop
+        muted
+        playsinline
+        webkit-playsinline
+        crossorigin="anonymous"
+      ></video>
     </a-assets>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <!-- =====================================================
-         TARGET 0 – TEXT (3s typewriter + audio1)
-         ===================================================== -->
+    <!-- =========================
+         TARGET 0 – TEXT
+         ========================= -->
     <a-entity mindar-image-target="targetIndex: 0">
-
       <a-entity
         position="0 0.2 0"
         reveal-typewriter="text: PHÒNG TRUYỀN THÔNG\nNĂM 1965; duration: 3000; audio: #audio1"
       >
-        <!-- Shadow -->
-        <a-troika-text
-          class="tw"
-          value=""
-          color="#000000"
-          opacity="0.55"
-          fontSize="0.18"
-          maxWidth="2.2"
-          align="center"
-          anchor="center"
-          position="0.02 -0.02 -0.03"
-        ></a-troika-text>
+        <a-troika-text class="tw" value="" color="#000000" opacity="0.55"
+          fontSize="0.18" maxWidth="2.2" align="center" anchor="center"
+          position="0.02 -0.02 -0.03"></a-troika-text>
 
-        <!-- Glow -->
-        <a-troika-text
-          class="tw"
-          value=""
-          color="#00E5FF"
-          opacity="0.35"
-          fontSize="0.18"
-          maxWidth="2.2"
-          align="center"
-          anchor="center"
-          position="0 0 -0.02"
-        ></a-troika-text>
+        <a-troika-text class="tw" value="" color="#00E5FF" opacity="0.35"
+          fontSize="0.18" maxWidth="2.2" align="center" anchor="center"
+          position="0 0 -0.02"></a-troika-text>
 
-        <!-- Main -->
-        <a-troika-text
-          class="tw"
-          value=""
-          color="#FFD700"
-          opacity="1"
-          fontSize="0.18"
-          maxWidth="2.2"
-          align="center"
-          anchor="center"
-          position="0 0 0"
-        ></a-troika-text>
+        <a-troika-text class="tw" value="" color="#FFD700" opacity="1"
+          fontSize="0.18" maxWidth="2.2" align="center" anchor="center"
+          position="0 0 0"></a-troika-text>
       </a-entity>
-
     </a-entity>
 
-    <!-- =====================================================
-         TARGET 1 – 3D MODEL (small → big in 3s + audio2)
-         ===================================================== -->
+    <!-- =========================
+         TARGET 1 – 3D MODEL
+         ========================= -->
     <a-entity mindar-image-target="targetIndex: 1">
-
       <a-entity
         id="model"
         gltf-model="url(model.glb)"
@@ -133,7 +93,25 @@
         slow-spin
         transparent-model="opacity: 0.6"
       ></a-entity>
+    </a-entity>
 
+    <!-- =========================
+         TARGET 2 – VIDEO ON IMAGE
+         ========================= -->
+    <a-entity mindar-image-target="targetIndex: 2" video-on-target="video: #video1">
+      <!--
+        Đây là tấm video phủ lên ảnh.
+        width/height bạn chỉnh theo tỉ lệ ảnh target.
+        Mặc định 1.0 x 0.56 (tỉ lệ 16:9).
+      -->
+      <a-video
+        id="video-plane"
+        src="#video1"
+        width="1.0"
+        height="0.56"
+        position="0 0 0"
+        rotation="-90 0 0"
+      ></a-video>
     </a-entity>
 
   </a-scene>
@@ -143,141 +121,132 @@
     const overlay = document.querySelector("#scanning-overlay");
     sceneEl.addEventListener("arReady", () => overlay.classList.add("hidden"));
 
-    /* ================= TYPEWRITER TEXT ================= */
+    function playAudio(audioEl){
+      if(!audioEl) return;
+      try{
+        audioEl.currentTime = 0;
+        const p = audioEl.play();
+        if(p && p.catch) p.catch(()=>{});
+      }catch(e){}
+    }
+
+    // TEXT: typewriter
     AFRAME.registerComponent("reveal-typewriter", {
-      schema: {
-        text: { type: "string" },
-        duration: { type: "number", default: 3000 },
-        audio: { type: "selector" }
-      },
-      init() {
+      schema: { text:{type:"string"}, duration:{type:"number",default:3000}, audio:{type:"selector"} },
+      init(){
         this.layers = this.el.querySelectorAll(".tw");
         this.target = this.el.closest("[mindar-image-target]");
         this.timer = null;
         this.running = false;
 
-        this.target.addEventListener("targetFound", () => this.start());
-        this.target.addEventListener("targetLost", () => this.reset());
+        this.target.addEventListener("targetFound", ()=>this.start());
+        this.target.addEventListener("targetLost", ()=>this.reset());
+        this.reset();
       },
-      reset() {
+      reset(){
         this.running = false;
         clearTimeout(this.timer);
-        this.layers.forEach(l => l.setAttribute("value", ""));
-        this.el.setAttribute("scale", "0.001 0.001 0.001");
+        this.layers.forEach(l=>l.setAttribute("value",""));
+        this.el.setAttribute("scale","0.001 0.001 0.001");
       },
-      start() {
-        if (this.running) return;
+      start(){
+        if(this.running) return;
         this.running = true;
 
-        if (this.data.audio) {
-          try {
-            this.data.audio.currentTime = 0;
-            this.data.audio.play().catch(()=>{});
-          } catch {}
-        }
+        playAudio(this.data.audio);
 
-        this.el.setAttribute("animation", {
-          property: "scale",
-          to: "1 1 1",
-          dur: 400,
-          easing: "easeOutCubic"
+        this.el.setAttribute("animation__pop", {
+          property:"scale", to:"1 1 1", dur:400, easing:"easeOutCubic"
         });
 
-        const text = this.data.text;
-        const step = Math.max(15, Math.floor(this.data.duration / text.length));
+        const text = this.data.text || "";
+        const step = Math.max(15, Math.floor(this.data.duration / Math.max(1, text.length)));
         let i = 0;
 
-        const loop = () => {
-          if (!this.running) return;
-          const s = text.slice(0, i);
-          this.layers.forEach(l => l.setAttribute("value", s));
+        const loop = ()=>{
+          if(!this.running) return;
+          this.layers.forEach(l=>l.setAttribute("value", text.slice(0,i)));
           i++;
-          if (i <= text.length) {
-            this.timer = setTimeout(loop, step);
-          }
+          if(i <= text.length) this.timer = setTimeout(loop, step);
         };
         loop();
       }
     });
 
-    /* ================= MODEL REVEAL FIX ================= */
+    // MODEL: always small->big each time
     AFRAME.registerComponent("reveal-model", {
       schema: {
-        duration: { type: "number", default: 3000 },
-        audio: { type: "selector" },
-        startScale: { type: "vec3" },
-        finalScale: { type: "vec3" },
-        startPos: { type: "vec3" },
-        finalPos: { type: "vec3" }
+        duration:{type:"number",default:3000},
+        audio:{type:"selector"},
+        startScale:{type:"vec3"},
+        finalScale:{type:"vec3"},
+        startPos:{type:"vec3"},
+        finalPos:{type:"vec3"}
       },
-      init() {
+      init(){
         this.target = this.el.closest("[mindar-image-target]");
         this.running = false;
 
-        this.forceStart();
-
-        this.target.addEventListener("targetFound", () => this.start());
-        this.target.addEventListener("targetLost", () => this.forceStart());
+        this._hardReset();
+        this.target.addEventListener("targetLost", ()=>this._hardReset());
+        this.target.addEventListener("targetFound", ()=>this.start());
       },
-      forceStart() {
+      _hardReset(){
         this.running = false;
         this.el.removeAttribute("animation__scale");
         this.el.removeAttribute("animation__pos");
-        this.el.setAttribute("scale", this.data.startScale);
-        this.el.setAttribute("position", this.data.startPos);
+
+        this.el.setAttribute("scale", `${this.data.startScale.x} ${this.data.startScale.y} ${this.data.startScale.z}`);
+        this.el.setAttribute("position", `${this.data.startPos.x} ${this.data.startPos.y} ${this.data.startPos.z}`);
+
+        if(this.el.object3D){
+          this.el.object3D.scale.set(this.data.startScale.x, this.data.startScale.y, this.data.startScale.z);
+          this.el.object3D.position.set(this.data.startPos.x, this.data.startPos.y, this.data.startPos.z);
+        }
       },
-      start() {
-        if (this.running) return;
+      start(){
+        if(this.running) return;
         this.running = true;
 
-        if (this.data.audio) {
-          try {
-            this.data.audio.currentTime = 0;
-            this.data.audio.play().catch(()=>{});
-          } catch {}
-        }
+        this._hardReset();
+        playAudio(this.data.audio);
 
-        requestAnimationFrame(() => {
+        requestAnimationFrame(()=>requestAnimationFrame(()=>{
           this.el.setAttribute("animation__scale", {
-            property: "scale",
-            to: `${this.data.finalScale.x} ${this.data.finalScale.y} ${this.data.finalScale.z}`,
-            dur: this.data.duration,
-            easing: "easeOutCubic"
+            property:"scale",
+            to:`${this.data.finalScale.x} ${this.data.finalScale.y} ${this.data.finalScale.z}`,
+            dur:this.data.duration,
+            easing:"easeOutCubic"
           });
           this.el.setAttribute("animation__pos", {
-            property: "position",
-            to: `${this.data.finalPos.x} ${this.data.finalPos.y} ${this.data.finalPos.z}`,
-            dur: this.data.duration,
-            easing: "easeOutCubic"
+            property:"position",
+            to:`${this.data.finalPos.x} ${this.data.finalPos.y} ${this.data.finalPos.z}`,
+            dur:this.data.duration,
+            easing:"easeOutCubic"
           });
-        });
+        }));
       }
     });
 
-    /* ================= SLOW ROTATION ================= */
     AFRAME.registerComponent("slow-spin", {
-      init() {
-        this.el.setAttribute("animation", {
-          property: "rotation",
-          to: "0 360 0",
-          loop: true,
-          dur: 14000,
-          easing: "linear"
+      init(){
+        this.el.setAttribute("animation__spin", {
+          property:"rotation", to:"0 360 0", loop:true, dur:14000, easing:"linear"
         });
       }
     });
 
-    /* ================= TRANSPARENT MODEL ================= */
     AFRAME.registerComponent("transparent-model", {
-      schema: { opacity: { type: "number", default: 0.6 } },
-      init() {
-        this.el.addEventListener("model-loaded", () => {
-          this.el.object3D.traverse(n => {
-            if (n.material) {
+      schema:{ opacity:{type:"number",default:0.6} },
+      init(){
+        this.el.addEventListener("model-loaded", ()=>{
+          const op = this.data.opacity;
+          this.el.object3D.traverse(n=>{
+            if(n.material){
               const mats = Array.isArray(n.material) ? n.material : [n.material];
-              mats.forEach(m => {
+              mats.forEach(m=>{
                 m.transparent = true;
-                m.opacity = this.data.opacity;
+                m.opacity = op;
                 m.depthWrite = false;
                 m.needsUpdate = true;
               });
@@ -286,6 +255,39 @@
         });
       }
     });
+
+    // VIDEO: auto play when target found, pause/reset when lost
+    AFRAME.registerComponent("video-on-target", {
+      schema: { video: { type: "selector" } },
+      init(){
+        this.target = this.el.closest("[mindar-image-target]");
+        this.video = this.data.video;
+
+        if(!this.video) return;
+
+        // đảm bảo video không tự play trước khi quét
+        try { this.video.pause(); this.video.currentTime = 0; } catch(e){}
+
+        this.target.addEventListener("targetFound", ()=>this.play());
+        this.target.addEventListener("targetLost", ()=>this.stop());
+      },
+      play(){
+        if(!this.video) return;
+        try{
+          // autoplay mobile thường cần muted (đã set) + playsinline
+          const p = this.video.play();
+          if(p && p.catch) p.catch(()=>{});
+        }catch(e){}
+      },
+      stop(){
+        if(!this.video) return;
+        try{
+          this.video.pause();
+          this.video.currentTime = 0;
+        }catch(e){}
+      }
+    });
   </script>
 </body>
 </html>
+
