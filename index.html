@@ -1,319 +1,291 @@
 <!DOCTYPE html>
 <html lang="vi">
-  <head>
-    <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    />
-    <title>MindAR Multi Target Effects</title>
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  />
+  <title>MindAR – Text & 3D Reveal</title>
 
-    <!-- A-Frame + MindAR -->
-    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+  <!-- A-Frame + MindAR -->
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
-    <!-- Troika Text (để hỗ trợ tiếng Việt có dấu ổn định) -->
-    <script src="https://unpkg.com/aframe-troika-text/dist/aframe-troika-text.min.js"></script>
+  <!-- Troika Text (hỗ trợ tiếng Việt có dấu) -->
+  <script src="https://unpkg.com/aframe-troika-text/dist/aframe-troika-text.min.js"></script>
 
-    <style>
-      html,
-      body {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-      }
-      a-scene {
-        width: 100%;
-        height: 100%;
-        position: absolute;
-        inset: 0;
-      }
-      #scanning-overlay {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        position: absolute;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.85);
-        color: white;
-        z-index: 999;
-        font-family: sans-serif;
-        text-align: center;
-        padding: 20px;
-      }
-      .hidden {
-        display: none !important;
-      }
-    </style>
-  </head>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    a-scene {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      inset: 0;
+    }
+    #scanning-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      color: #fff;
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-family: sans-serif;
+    }
+    .hidden { display: none !important; }
+  </style>
+</head>
 
-  <body>
-    <div id="scanning-overlay">
-      Đang khởi động Camera...<br />Vui lòng đợi!
-    </div>
+<body>
+  <div id="scanning-overlay">
+    Đang khởi động Camera…<br/>Vui lòng đợi!
+  </div>
 
-    <a-scene
-      mindar-image="imageTargetSrc: ./targets.mind; filterMinCF:0.0001; filterBeta:0.001;"
-      color-space="sRGB"
-      renderer="colorManagement: true, physicallyCorrectLights"
-      vr-mode-ui="enabled: false"
-      device-orientation-permission-ui="enabled: false"
-      embedded
-    >
-      <a-assets>
-        <audio id="audio1" src="audio1.mp3" preload="auto"></audio>
-        <audio id="audio2" src="audio2.mp3" preload="auto"></audio>
-      </a-assets>
+  <a-scene
+    mindar-image="imageTargetSrc: ./targets.mind; filterMinCF:0.0001; filterBeta:0.001;"
+    renderer="colorManagement: true, physicallyCorrectLights"
+    color-space="sRGB"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false"
+    embedded
+  >
 
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+    <a-assets>
+      <audio id="audio1" src="audio1.mp3" preload="auto"></audio>
+      <audio id="audio2" src="audio2.mp3" preload="auto"></audio>
+    </a-assets>
 
-      <!-- ========= TARGET 0: TEXT ========= -->
-      <a-entity mindar-image-target="targetIndex: 0" id="target0">
-        <!-- Nhóm chữ (không nền mờ) -->
-        <a-entity
-          id="text-group"
-          position="0 0.2 0"
-          reveal-typewriter="text: PHÒNG TRUYỀN THÔNG\nNĂM 1965; duration: 3000; audio: #audio1"
-        >
-          <!-- Shadow -->
-          <a-troika-text
-            class="tw-layer"
-            value=""
-            color="#000000"
-            opacity="0.55"
-            anchor="center"
-            align="center"
-            fontSize="0.18"
-            maxWidth="2.2"
-            lineHeight="1.15"
-            letterSpacing="0.03"
-            position="0.02 -0.02 -0.03"
-          ></a-troika-text>
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-          <!-- Glow -->
-          <a-troika-text
-            class="tw-layer"
-            value=""
-            color="#00E5FF"
-            opacity="0.35"
-            anchor="center"
-            align="center"
-            fontSize="0.18"
-            maxWidth="2.2"
-            lineHeight="1.15"
-            letterSpacing="0.03"
-            position="0 0 -0.02"
-          ></a-troika-text>
+    <!-- =====================================================
+         TARGET 0 – TEXT (3s typewriter + audio1)
+         ===================================================== -->
+    <a-entity mindar-image-target="targetIndex: 0">
 
-          <!-- Main -->
-          <a-troika-text
-            class="tw-layer"
-            value=""
-            color="#FFD700"
-            opacity="1"
-            anchor="center"
-            align="center"
-            fontSize="0.18"
-            maxWidth="2.2"
-            lineHeight="1.15"
-            letterSpacing="0.03"
-            position="0 0 0"
-          ></a-troika-text>
-        </a-entity>
+      <a-entity
+        position="0 0.2 0"
+        reveal-typewriter="text: PHÒNG TRUYỀN THÔNG\nNĂM 1965; duration: 3000; audio: #audio1"
+      >
+        <!-- Shadow -->
+        <a-troika-text
+          class="tw"
+          value=""
+          color="#000000"
+          opacity="0.55"
+          fontSize="0.18"
+          maxWidth="2.2"
+          align="center"
+          anchor="center"
+          position="0.02 -0.02 -0.03"
+        ></a-troika-text>
+
+        <!-- Glow -->
+        <a-troika-text
+          class="tw"
+          value=""
+          color="#00E5FF"
+          opacity="0.35"
+          fontSize="0.18"
+          maxWidth="2.2"
+          align="center"
+          anchor="center"
+          position="0 0 -0.02"
+        ></a-troika-text>
+
+        <!-- Main -->
+        <a-troika-text
+          class="tw"
+          value=""
+          color="#FFD700"
+          opacity="1"
+          fontSize="0.18"
+          maxWidth="2.2"
+          align="center"
+          anchor="center"
+          position="0 0 0"
+        ></a-troika-text>
       </a-entity>
 
-      <!-- ========= TARGET 1: 3D MODEL ========= -->
-      <a-entity mindar-image-target="targetIndex: 1" id="target1">
-        <a-entity
-          id="model-entity"
-          gltf-model="url(model.glb)"
-          position="0 0.15 0"
-          rotation="0 0 0"
-          scale="0.04 0.04 0.04"
-          reveal-model="duration: 3000; audio: #audio2; finalScale: 0.4 0.4 0.4; finalPos: 0 0.22 0"
-          slow-spin="dur: 14000"
-          transparent-model="opacity: 0.6"
-        ></a-entity>
-      </a-entity>
-    </a-scene>
+    </a-entity>
 
-    <script>
-      const sceneEl = document.querySelector("a-scene");
-      const overlay = document.querySelector("#scanning-overlay");
+    <!-- =====================================================
+         TARGET 1 – 3D MODEL (small → big in 3s + audio2)
+         ===================================================== -->
+    <a-entity mindar-image-target="targetIndex: 1">
 
-      sceneEl.addEventListener("arReady", () => {
-        overlay.classList.add("hidden");
-      });
+      <a-entity
+        id="model"
+        gltf-model="url(model.glb)"
+        reveal-model="duration: 3000; audio: #audio2;
+                      startScale: 0.001 0.001 0.001;
+                      finalScale: 0.4 0.4 0.4;
+                      startPos: 0 0.08 0;
+                      finalPos: 0 0.32 0"
+        slow-spin
+        transparent-model="opacity: 0.6"
+      ></a-entity>
 
-      // ===== Helpers =====
-      function playAudioOnce(audioEl) {
-        if (!audioEl) return;
-        try {
-          audioEl.currentTime = 0;
-          const p = audioEl.play();
-          if (p && typeof p.catch === "function") p.catch(() => {});
-        } catch (e) {}
+    </a-entity>
+
+  </a-scene>
+
+  <script>
+    const sceneEl = document.querySelector("a-scene");
+    const overlay = document.querySelector("#scanning-overlay");
+    sceneEl.addEventListener("arReady", () => overlay.classList.add("hidden"));
+
+    /* ================= TYPEWRITER TEXT ================= */
+    AFRAME.registerComponent("reveal-typewriter", {
+      schema: {
+        text: { type: "string" },
+        duration: { type: "number", default: 3000 },
+        audio: { type: "selector" }
+      },
+      init() {
+        this.layers = this.el.querySelectorAll(".tw");
+        this.target = this.el.closest("[mindar-image-target]");
+        this.timer = null;
+        this.running = false;
+
+        this.target.addEventListener("targetFound", () => this.start());
+        this.target.addEventListener("targetLost", () => this.reset());
+      },
+      reset() {
+        this.running = false;
+        clearTimeout(this.timer);
+        this.layers.forEach(l => l.setAttribute("value", ""));
+        this.el.setAttribute("scale", "0.001 0.001 0.001");
+      },
+      start() {
+        if (this.running) return;
+        this.running = true;
+
+        if (this.data.audio) {
+          try {
+            this.data.audio.currentTime = 0;
+            this.data.audio.play().catch(()=>{});
+          } catch {}
+        }
+
+        this.el.setAttribute("animation", {
+          property: "scale",
+          to: "1 1 1",
+          dur: 400,
+          easing: "easeOutCubic"
+        });
+
+        const text = this.data.text;
+        const step = Math.max(15, Math.floor(this.data.duration / text.length));
+        let i = 0;
+
+        const loop = () => {
+          if (!this.running) return;
+          const s = text.slice(0, i);
+          this.layers.forEach(l => l.setAttribute("value", s));
+          i++;
+          if (i <= text.length) {
+            this.timer = setTimeout(loop, step);
+          }
+        };
+        loop();
       }
+    });
 
-      // ===== TEXT: typewriter in EXACT duration =====
-      AFRAME.registerComponent("reveal-typewriter", {
-        schema: {
-          text: { type: "string", default: "" },
-          duration: { type: "number", default: 3000 },
-          audio: { type: "selector" },
-        },
-        init() {
-          this.layers = Array.from(this.el.querySelectorAll(".tw-layer"));
-          this.targetEl = this.el.closest("[mindar-image-target]");
-          this.timer = null;
-          this.running = false;
-          this.reset();
-          if (this.targetEl) {
-            this.targetEl.addEventListener("targetFound", () => this.start());
-            this.targetEl.addEventListener("targetLost", () => this.reset());
-          }
-        },
-        reset() {
-          this.running = false;
-          if (this.timer) {
-            clearTimeout(this.timer);
-            this.timer = null;
-          }
-          this.layers.forEach((l) => l.setAttribute("value", ""));
-          // pop reset
-          this.el.removeAttribute("animation__pop");
-          this.el.setAttribute("scale", "0.001 0.001 0.001");
-        },
-        start() {
-          if (this.running) return;
-          this.running = true;
+    /* ================= MODEL REVEAL FIX ================= */
+    AFRAME.registerComponent("reveal-model", {
+      schema: {
+        duration: { type: "number", default: 3000 },
+        audio: { type: "selector" },
+        startScale: { type: "vec3" },
+        finalScale: { type: "vec3" },
+        startPos: { type: "vec3" },
+        finalPos: { type: "vec3" }
+      },
+      init() {
+        this.target = this.el.closest("[mindar-image-target]");
+        this.running = false;
 
-          // play audio when starts
-          playAudioOnce(this.data.audio);
+        this.forceStart();
 
-          // pop-in once
-          this.el.setAttribute("animation__pop", {
-            property: "scale",
-            to: "1 1 1",
-            dur: 500,
-            easing: "easeOutCubic",
-          });
+        this.target.addEventListener("targetFound", () => this.start());
+        this.target.addEventListener("targetLost", () => this.forceStart());
+      },
+      forceStart() {
+        this.running = false;
+        this.el.removeAttribute("animation__scale");
+        this.el.removeAttribute("animation__pos");
+        this.el.setAttribute("scale", this.data.startScale);
+        this.el.setAttribute("position", this.data.startPos);
+      },
+      start() {
+        if (this.running) return;
+        this.running = true;
 
-          const full = this.data.text || "";
-          const len = full.length;
-          if (len === 0) return;
+        if (this.data.audio) {
+          try {
+            this.data.audio.currentTime = 0;
+            this.data.audio.play().catch(()=>{});
+          } catch {}
+        }
 
-          const stepMs = Math.max(12, Math.floor(this.data.duration / len));
-          let i = 0;
-
-          const step = () => {
-            if (!this.running) return;
-            const shown = full.slice(0, i);
-            this.layers.forEach((l) => l.setAttribute("value", shown));
-            i++;
-            if (i <= len) {
-              this.timer = setTimeout(step, stepMs);
-            } else {
-              // ensure final is complete
-              this.layers.forEach((l) => l.setAttribute("value", full));
-            }
-          };
-
-          step();
-        },
-      });
-
-      // ===== MODEL: scale up + move up in EXACT duration, then keep spinning =====
-      AFRAME.registerComponent("reveal-model", {
-        schema: {
-          duration: { type: "number", default: 3000 },
-          audio: { type: "selector" },
-          finalScale: { type: "vec3", default: { x: 0.4, y: 0.4, z: 0.4 } },
-          finalPos: { type: "vec3", default: { x: 0, y: 0.22, z: 0 } },
-        },
-        init() {
-          this.targetEl = this.el.closest("[mindar-image-target]");
-          this.running = false;
-
-          // store initial state for reset
-          this.initialScale = this.el.getAttribute("scale") || { x: 0.04, y: 0.04, z: 0.04 };
-          this.initialPos = this.el.getAttribute("position") || { x: 0, y: 0.15, z: 0 };
-
-          this.reset();
-
-          if (this.targetEl) {
-            this.targetEl.addEventListener("targetFound", () => this.start());
-            this.targetEl.addEventListener("targetLost", () => this.reset());
-          }
-        },
-        reset() {
-          this.running = false;
-          this.el.removeAttribute("animation__scaleup");
-          this.el.removeAttribute("animation__rise");
-          // reset to small and a bit lower
-          this.el.setAttribute("scale", this.initialScale);
-          this.el.setAttribute("position", this.initialPos);
-        },
-        start() {
-          if (this.running) return;
-          this.running = true;
-
-          playAudioOnce(this.data.audio);
-
-          // scale up in exactly duration
-          this.el.setAttribute("animation__scaleup", {
+        requestAnimationFrame(() => {
+          this.el.setAttribute("animation__scale", {
             property: "scale",
             to: `${this.data.finalScale.x} ${this.data.finalScale.y} ${this.data.finalScale.z}`,
             dur: this.data.duration,
-            easing: "easeOutCubic",
+            easing: "easeOutCubic"
           });
-
-          // move up a bit more (cách mặt ảnh xa hơn)
-          this.el.setAttribute("animation__rise", {
+          this.el.setAttribute("animation__pos", {
             property: "position",
             to: `${this.data.finalPos.x} ${this.data.finalPos.y} ${this.data.finalPos.z}`,
             dur: this.data.duration,
-            easing: "easeOutCubic",
+            easing: "easeOutCubic"
           });
-        },
-      });
+        });
+      }
+    });
 
-      // ===== Slow spin always available (MindAR shows/hides with target) =====
-      AFRAME.registerComponent("slow-spin", {
-        schema: { dur: { type: "number", default: 14000 } },
-        init() {
-          this.el.setAttribute("animation__spin", {
-            property: "rotation",
-            to: "0 360 0",
-            loop: true,
-            dur: this.data.dur,
-            easing: "linear",
-          });
-        },
-      });
+    /* ================= SLOW ROTATION ================= */
+    AFRAME.registerComponent("slow-spin", {
+      init() {
+        this.el.setAttribute("animation", {
+          property: "rotation",
+          to: "0 360 0",
+          loop: true,
+          dur: 14000,
+          easing: "linear"
+        });
+      }
+    });
 
-      // ===== Make model transparent (force) =====
-      AFRAME.registerComponent("transparent-model", {
-        schema: { opacity: { type: "number", default: 0.6 } },
-        init() {
-          this.el.addEventListener("model-loaded", () => {
-            const op = this.data.opacity;
-            this.el.object3D.traverse((node) => {
-              if (node && node.material) {
-                const mats = Array.isArray(node.material) ? node.material : [node.material];
-                mats.forEach((m) => {
-                  m.transparent = true;
-                  m.opacity = op;
-                  m.depthWrite = false;
-                  m.needsUpdate = true;
-                });
-              }
-            });
+    /* ================= TRANSPARENT MODEL ================= */
+    AFRAME.registerComponent("transparent-model", {
+      schema: { opacity: { type: "number", default: 0.6 } },
+      init() {
+        this.el.addEventListener("model-loaded", () => {
+          this.el.object3D.traverse(n => {
+            if (n.material) {
+              const mats = Array.isArray(n.material) ? n.material : [n.material];
+              mats.forEach(m => {
+                m.transparent = true;
+                m.opacity = this.data.opacity;
+                m.depthWrite = false;
+                m.needsUpdate = true;
+              });
+            }
           });
-        },
-      });
-    </script>
-  </body>
+        });
+      }
+    });
+  </script>
+</body>
 </html>
