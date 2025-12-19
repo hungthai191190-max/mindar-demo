@@ -2,23 +2,26 @@
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>MindAR Fix Overlay</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>MindAR Text Effect</title>
 
+    <!-- A-Frame + MindAR -->
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
-      /* Sửa lỗi hiển thị 1 nửa màn hình */
-      html, body {
+      html,
+      body {
         margin: 0;
         padding: 0;
         width: 100%;
         height: 100%;
         overflow: hidden;
       }
-      
-      /* Ép A-Scene bao phủ toàn bộ */
+
       a-scene {
         width: 100%;
         height: 100%;
@@ -28,25 +31,20 @@
         z-index: 1;
       }
 
-      /* Tùy chỉnh giao diện Loading */
       #scanning-overlay {
         display: flex;
         align-items: center;
         justify-content: center;
         position: absolute;
-        left: 0;
-        right: 0;
-        top: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.8);
+        inset: 0;
+        background: rgba(0, 0, 0, 0.85);
         color: white;
         z-index: 999;
         font-family: sans-serif;
         text-align: center;
         padding: 20px;
       }
-      
-      /* Class để ẩn overlay vĩnh viễn */
+
       .hidden {
         display: none !important;
       }
@@ -54,42 +52,124 @@
   </head>
 
   <body>
-    <div id="scanning-overlay">Đang khởi động Camera...<br>Vui lòng đợi!</div>
+    <div id="scanning-overlay">
+      Đang khởi động Camera...<br />Vui lòng đợi!
+    </div>
 
     <a-scene
-      mindar-image="imageTargetSrc: ./targets.mind; filterMinCF:0.0001; filterBeta: 0.001;"
+      mindar-image="imageTargetSrc: ./targets.mind; filterMinCF:0.0001; filterBeta:0.001;"
       color-space="sRGB"
       renderer="colorManagement: true, physicallyCorrectLights"
       vr-mode-ui="enabled: false"
       device-orientation-permission-ui="enabled: false"
       embedded
     >
-      
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
+      <!-- TARGET -->
       <a-entity mindar-image-target="targetIndex: 0">
-        <a-plane color="black" opacity="0.7" width="2.2" height="0.8" position="0 0.2 -0.01"></a-plane>
-        
-        <a-text
-          value="PHONG TRUYEN THONG\n1990"
-          color="#FFD700"
-          align="center"
-          width="4"
-          position="0 0.2 0"
-        ></a-text>
-      </a-entity>
+        <!-- Nền tối -->
+        <a-plane
+          color="black"
+          opacity="0.55"
+          width="2.4"
+          height="0.9"
+          position="0 0.2 -0.02"
+        ></a-plane>
 
+        <!-- GROUP TEXT -->
+        <a-entity
+          id="text-group"
+          position="0 0.2 0"
+          typewriter-spin="text: PHONG TRUYEN THONG\n1965"
+        >
+          <!-- Shadow layer -->
+          <a-entity
+            class="text-layer"
+            text="value: ; align: center; width: 4.2; lineHeight: 58; letterSpacing: 1.2; color: #000; opacity: 0.6;"
+            position="0.025 -0.025 -0.03"
+          ></a-entity>
+
+          <!-- Glow layer -->
+          <a-entity
+            class="text-layer"
+            text="value: ; align: center; width: 4.2; lineHeight: 58; letterSpacing: 1.2; color: #00e5ff; opacity: 0.35;"
+            position="0 0 -0.02"
+          ></a-entity>
+
+          <!-- Main text -->
+          <a-entity
+            class="text-layer"
+            text="value: ; align: center; width: 4.2; lineHeight: 58; letterSpacing: 1.2; color: #FFD700;"
+            position="0 0 0"
+          ></a-entity>
+        </a-entity>
+      </a-entity>
     </a-scene>
 
     <script>
-      const sceneEl = document.querySelector('a-scene');
-      const overlay = document.querySelector('#scanning-overlay');
+      const sceneEl = document.querySelector("a-scene");
+      const overlay = document.querySelector("#scanning-overlay");
 
-      // Lắng nghe sự kiện 'arReady' (Khi camera đã mở thành công)
-      sceneEl.addEventListener("arReady", (event) => {
-        console.log("MindAR is ready - Hiding overlay");
-        // Ẩn màn hình chờ đi vĩnh viễn
-        overlay.classList.add('hidden');
+      sceneEl.addEventListener("arReady", () => {
+        overlay.classList.add("hidden");
+      });
+
+      // ===== TEXT EFFECT COMPONENT =====
+      AFRAME.registerComponent("typewriter-spin", {
+        schema: {
+          text: { type: "string" },
+        },
+        init() {
+          this.layers = this.el.querySelectorAll(".text-layer");
+          this.fullText = this.data.text;
+          this.index = 0;
+          this.started = false;
+        },
+        tick() {
+          if (this.started) return;
+          this.started = true;
+
+          // scale pop-in
+          this.el.setAttribute("scale", "0.001 0.001 0.001");
+          this.el.setAttribute("animation__pop", {
+            property: "scale",
+            to: "1 1 1",
+            dur: 700,
+            easing: "easeOutElastic",
+          });
+
+          this.type();
+        },
+        type() {
+          if (this.index <= this.fullText.length) {
+            const current = this.fullText.slice(0, this.index);
+            this.layers.forEach((l) =>
+              l.setAttribute("text", "value", current)
+            );
+            this.index++;
+            setTimeout(() => this.type(), 55);
+          } else {
+            // spin after typing
+            this.el.setAttribute("animation__spin", {
+              property: "rotation",
+              to: "0 360 0",
+              loop: true,
+              dur: 2600,
+              easing: "linear",
+            });
+
+            // gentle floating
+            this.el.setAttribute("animation__float", {
+              property: "position",
+              dir: "alternate",
+              dur: 1200,
+              loop: true,
+              to: "0 0.24 0",
+              easing: "easeInOutSine",
+            });
+          }
+        },
       });
     </script>
   </body>
