@@ -6,13 +6,13 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
   />
-  <title>MindAR – Text + 3D + Video (3 Targets)</title>
+  <title>MindAR – 3 Targets (Text + 3D + Video) FIX Re-scan</title>
 
   <!-- A-Frame + MindAR -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
-  <!-- Troika Text (hỗ trợ tiếng Việt có dấu) -->
+  <!-- Troika Text (tiếng Việt có dấu) -->
   <script src="https://unpkg.com/aframe-troika-text/dist/aframe-troika-text.min.js"></script>
 
   <style>
@@ -59,58 +59,31 @@
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <!-- =====================================================
-         TARGET 0 – TEXT (3s typewriter + audio1)
-         ===================================================== -->
+    <!-- =========================
+         TARGET 0 – TEXT
+         ========================= -->
     <a-entity mindar-image-target="targetIndex: 0">
       <a-entity
         position="0 0.2 0"
-        reveal-typewriter="text: PHÒNG TRUYỀN THÔNG\nNĂM 1965; duration: 3000; audio: #audio1"
+        reveal-typewriter="text: PHÒNG TRUYỀN THỐNG\nNĂM 1990; duration: 3000; audio: #audio1"
       >
-        <!-- Shadow -->
-        <a-troika-text
-          class="tw"
-          value=""
-          color="#000000"
-          opacity="0.55"
-          fontSize="0.18"
-          maxWidth="2.2"
-          align="center"
-          anchor="center"
-          position="0.02 -0.02 -0.03"
-        ></a-troika-text>
+        <a-troika-text class="tw" value="" color="#000000" opacity="0.55"
+          fontSize="0.10" maxWidth="2.2" align="center" anchor="center"
+          position="0.02 -0.02 -0.03"></a-troika-text>
 
-        <!-- Glow -->
-        <a-troika-text
-          class="tw"
-          value=""
-          color="#00E5FF"
-          opacity="0.35"
-          fontSize="0.18"
-          maxWidth="2.2"
-          align="center"
-          anchor="center"
-          position="0 0 -0.02"
-        ></a-troika-text>
+        <a-troika-text class="tw" value="" color="#00E5FF" opacity="0.35"
+          fontSize="0.10" maxWidth="2.2" align="center" anchor="center"
+          position="0 0 -0.02"></a-troika-text>
 
-        <!-- Main -->
-        <a-troika-text
-          class="tw"
-          value=""
-          color="#FFD700"
-          opacity="1"
-          fontSize="0.18"
-          maxWidth="2.2"
-          align="center"
-          anchor="center"
-          position="0 0 0"
-        ></a-troika-text>
+        <a-troika-text class="tw" value="" color="#FFD700" opacity="1"
+          fontSize="0.10" maxWidth="2.2" align="center" anchor="center"
+          position="0 0 0"></a-troika-text>
       </a-entity>
     </a-entity>
 
-    <!-- =====================================================
-         TARGET 1 – 3D MODEL (small → big in 3s + audio2)
-         ===================================================== -->
+    <!-- =========================
+         TARGET 1 – 3D MODEL
+         ========================= -->
     <a-entity mindar-image-target="targetIndex: 1">
       <a-entity
         id="model"
@@ -125,11 +98,10 @@
       ></a-entity>
     </a-entity>
 
-    <!-- =====================================================
-         TARGET 2 – VIDEO ON WALL (16:9) auto play/pause
-         Ảnh target kích thước 1920x1080 nên tỉ lệ 16:9
-         ===================================================== -->
-    <a-entity mindar-image-target="targetIndex: 2" video-on-target="video: #video1">
+    <!-- =========================
+         TARGET 2 – VIDEO ON WALL (16:9)
+         ========================= -->
+    <a-entity mindar-image-target="targetIndex: 2" video-on-target="video: #video1; restart: true">
       <a-video
         id="video-plane"
         src="#video1"
@@ -156,29 +128,31 @@
       }catch(e){}
     }
 
-    /* ================= TEXT: typewriter ================= */
+    /* =========================================================
+       TEXT: luôn restart mỗi lần targetFound (kể cả khi không bắn targetLost)
+       ========================================================= */
     AFRAME.registerComponent("reveal-typewriter", {
       schema: { text:{type:"string"}, duration:{type:"number",default:3000}, audio:{type:"selector"} },
       init(){
         this.layers = this.el.querySelectorAll(".tw");
         this.target = this.el.closest("[mindar-image-target]");
         this.timer = null;
-        this.running = false;
 
-        this.target.addEventListener("targetFound", ()=>this.start());
+        this.target.addEventListener("targetFound", ()=>this.restart());
         this.target.addEventListener("targetLost", ()=>this.reset());
         this.reset();
       },
       reset(){
-        this.running = false;
-        clearTimeout(this.timer);
+        if(this.timer) { clearTimeout(this.timer); this.timer = null; }
+        // clear values
         this.layers.forEach(l=>l.setAttribute("value",""));
+        // reset scale and remove pop anim
+        this.el.removeAttribute("animation__pop");
         this.el.setAttribute("scale","0.001 0.001 0.001");
       },
-      start(){
-        if(this.running) return;
-        this.running = true;
-
+      restart(){
+        // luôn reset trước rồi mới start để chắc chắn chạy lại
+        this.reset();
         playAudio(this.data.audio);
 
         this.el.setAttribute("animation__pop", {
@@ -186,20 +160,28 @@
         });
 
         const text = this.data.text || "";
-        const step = Math.max(15, Math.floor(this.data.duration / Math.max(1, text.length)));
+        const len = Math.max(1, text.length);
+        const step = Math.max(15, Math.floor(this.data.duration / len));
         let i = 0;
 
         const loop = ()=>{
-          if(!this.running) return;
-          this.layers.forEach(l=>l.setAttribute("value", text.slice(0,i)));
+          const shown = text.slice(0, i);
+          this.layers.forEach(l=>l.setAttribute("value", shown));
           i++;
-          if(i <= text.length) this.timer = setTimeout(loop, step);
+          if(i <= text.length){
+            this.timer = setTimeout(loop, step);
+          } else {
+            // đảm bảo troika render final
+            this.layers.forEach(l=>l.setAttribute("value", text));
+          }
         };
         loop();
       }
     });
 
-    /* ================= MODEL: always small->big ================= */
+    /* =========================================================
+       MODEL: luôn small->big mỗi lần targetFound
+       ========================================================= */
     AFRAME.registerComponent("reveal-model", {
       schema: {
         duration:{type:"number",default:3000},
@@ -219,36 +201,38 @@
       },
       _hardReset(){
         this.running = false;
-
         this.el.removeAttribute("animation__scale");
         this.el.removeAttribute("animation__pos");
 
-        this.el.setAttribute("scale", `${this.data.startScale.x} ${this.data.startScale.y} ${this.data.startScale.z}`);
-        this.el.setAttribute("position", `${this.data.startPos.x} ${this.data.startPos.y} ${this.data.startPos.z}`);
+        const ss = this.data.startScale, sp = this.data.startPos;
+        this.el.setAttribute("scale", `${ss.x} ${ss.y} ${ss.z}`);
+        this.el.setAttribute("position", `${sp.x} ${sp.y} ${sp.z}`);
 
         if(this.el.object3D){
-          this.el.object3D.scale.set(this.data.startScale.x, this.data.startScale.y, this.data.startScale.z);
-          this.el.object3D.position.set(this.data.startPos.x, this.data.startPos.y, this.data.startPos.z);
+          this.el.object3D.scale.set(ss.x, ss.y, ss.z);
+          this.el.object3D.position.set(sp.x, sp.y, sp.z);
         }
       },
       start(){
         if(this.running) return;
         this.running = true;
 
+        // ép nhỏ ngay khi found để lần nào cũng thấy nhỏ->to
         this._hardReset();
         playAudio(this.data.audio);
 
-        // đợi 2 frame để chắc chắn MindAR đã update visibility
+        const fs = this.data.finalScale, fp = this.data.finalPos;
+
         requestAnimationFrame(()=>requestAnimationFrame(()=>{
           this.el.setAttribute("animation__scale", {
             property:"scale",
-            to:`${this.data.finalScale.x} ${this.data.finalScale.y} ${this.data.finalScale.z}`,
+            to:`${fs.x} ${fs.y} ${fs.z}`,
             dur:this.data.duration,
             easing:"easeOutCubic"
           });
           this.el.setAttribute("animation__pos", {
             property:"position",
-            to:`${this.data.finalPos.x} ${this.data.finalPos.y} ${this.data.finalPos.z}`,
+            to:`${fp.x} ${fp.y} ${fp.z}`,
             dur:this.data.duration,
             easing:"easeOutCubic"
           });
@@ -256,7 +240,6 @@
       }
     });
 
-    /* ================= SPIN ================= */
     AFRAME.registerComponent("slow-spin", {
       init(){
         this.el.setAttribute("animation__spin", {
@@ -265,7 +248,6 @@
       }
     });
 
-    /* ================= TRANSPARENT MODEL ================= */
     AFRAME.registerComponent("transparent-model", {
       schema:{ opacity:{type:"number",default:0.6} },
       init(){
@@ -286,35 +268,80 @@
       }
     });
 
-    /* ================= VIDEO: play on found, pause+rewind on lost ================= */
+    /* =========================================================
+       VIDEO: fix rescan (play lại chắc chắn)
+       - restart=true: mỗi lần found sẽ tua về 0 rồi play
+       - nếu video chưa sẵn: đợi canplay rồi play
+       - lost: pause + reset + load để iOS/texture không bị kẹt
+       ========================================================= */
     AFRAME.registerComponent("video-on-target", {
-      schema: { video: { type: "selector" } },
+      schema: {
+        video: { type: "selector" },
+        restart: { type: "boolean", default: true }
+      },
       init(){
         this.target = this.el.closest("[mindar-image-target]");
         this.video = this.data.video;
         if(!this.video) return;
 
-        // không tự chạy trước
-        try { this.video.pause(); this.video.currentTime = 0; } catch(e){}
+        // chuẩn bị trạng thái ban đầu
+        this._stopHard();
 
-        this.target.addEventListener("targetFound", ()=>this.play());
-        this.target.addEventListener("targetLost", ()=>this.stop());
+        this._onFound = ()=>this.playHard();
+        this._onLost  = ()=>this._stopHard();
+
+        this.target.addEventListener("targetFound", this._onFound);
+        this.target.addEventListener("targetLost", this._onLost);
       },
-      play(){
-        if(!this.video) return;
-        try{
-          const p = this.video.play();
-          if(p && p.catch) p.catch(()=>{});
-        }catch(e){}
-      },
-      stop(){
+
+      _stopHard(){
         if(!this.video) return;
         try{
           this.video.pause();
+          // reset về đầu để lần sau play lại luôn thấy chạy
           this.video.currentTime = 0;
+          // load lại để tránh kẹt texture trên một số máy
+          this.video.load();
         }catch(e){}
+      },
+
+      playHard(){
+        if(!this.video) return;
+
+        const v = this.video;
+
+        // luôn đảm bảo muted/inline để autoplay không bị chặn
+        v.muted = true;
+        v.setAttribute("playsinline", "");
+        v.setAttribute("webkit-playsinline", "");
+
+        // tuỳ chọn restart từ đầu mỗi lần quét
+        if(this.data.restart){
+          try { v.currentTime = 0; } catch(e){}
+        }
+
+        const tryPlay = ()=>{
+          try{
+            const p = v.play();
+            if(p && p.catch) p.catch(()=>{});
+          }catch(e){}
+        };
+
+        // nếu chưa đủ dữ liệu để play mượt, đợi canplay
+        if(v.readyState < 2){
+          const onCanPlay = ()=>{
+            v.removeEventListener("canplay", onCanPlay);
+            tryPlay();
+          };
+          v.addEventListener("canplay", onCanPlay, { once: true });
+          // kích hoạt load
+          try { v.load(); } catch(e){}
+        } else {
+          tryPlay();
+        }
       }
     });
   </script>
 </body>
 </html>
+
