@@ -6,7 +6,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
   />
-  <title>MindAR – Fix Space Text</title>
+  <title>MindAR – FINAL (All Features)</title>
 
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
@@ -27,13 +27,13 @@
     }
     .hidden { display: none !important; opacity: 0; pointer-events: none; }
 
-    /* --- UI PANEL --- */
+    /* --- GIAO DIỆN UI (Đã tối ưu text dài + tiếng Việt) --- */
     #info-panel {
       position: fixed;
       bottom: 20px; left: 15px; right: 15px;
       z-index: 100;
       
-      background: rgba(10, 10, 10, 0.8); /* Màu nền đậm hơn chút */
+      background: rgba(10, 10, 10, 0.75); /* Nền tối mờ */
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
       
@@ -44,9 +44,9 @@
       
       /* Cấu hình hiển thị chữ */
       max-height: 40%;
-      overflow-y: auto;
-      word-wrap: break-word; /* Tự động xuống dòng */
-      white-space: pre-wrap; /* QUAN TRỌNG: Giữ nguyên dấu cách và xuống dòng */
+      overflow-y: auto;       /* Cuộn nếu dài quá */
+      word-wrap: break-word;  /* Xuống dòng tự động */
+      white-space: pre-wrap;  /* Giữ nguyên dấu cách */
       
       opacity: 0;
       transform: translateY(30px);
@@ -70,10 +70,10 @@
 
     #ui-desc {
       margin: 0;
-      font-size: 15px; /* Chữ to hơn xíu cho dễ đọc */
+      font-size: 15px;
       line-height: 1.6;
       color: #e0e0e0;
-      text-align: left; /* Canh trái chuẩn để không bị lỗi giãn chữ */
+      text-align: left;
     }
   </style>
 </head>
@@ -89,10 +89,10 @@
   <a-scene
     mindar-image="
       imageTargetSrc: ./targets.mind; 
-      filterMinCF: 0.0001; 
-      filterBeta: 0.001; 
+      filterMinCF:0.0001; 
+      filterBeta:0.001;
       uiScanning: #scanning-overlay;
-      /* Ép độ phân giải lên HD/Full HD */
+      /* CẬP NHẬT: Ép độ phân giải cao (Full HD) để camera nét hơn */
       videoConstraint: {
         facingMode: 'environment',
         width: { ideal: 1920 },
@@ -113,8 +113,7 @@
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <a-entity mindar-image-target="targetIndex: 0">
-       </a-entity>
+    <a-entity mindar-image-target="targetIndex: 0"></a-entity>
 
     <a-entity mindar-image-target="targetIndex: 1">
       
@@ -135,13 +134,20 @@
       <a-entity 
         html-overlay-controller="delay: 3000; audio: #audio2"
         data-title="TÊN LỬA P-15 U"
-        data-desc="Được sử dụng trong kháng chiến chống Mỹ cứu nước năm 1945, 1967. Được biên chế cho Trung tâm BĐKT năm 2008."
+        data-desc="Được sử dụng trong kháng chiến chống Mỹ cứu nước năm 1945, 1967. Được biên chế cho Trung tâm BĐKT năm 2008. Văn bản này sẽ tự động xuống dòng và giữ nguyên các khoảng trắng."
       ></a-entity>
 
     </a-entity>
 
     <a-entity mindar-image-target="targetIndex: 2" video-on-target="video: #video1; restart: true">
-      <a-video src="#video1" width="1.0" height="0.5625" position="0 0 0.001"></a-video>
+      <a-video 
+        id="video-plane"
+        src="#video1"
+        width="1.0"
+        height="0.5625"
+        position="0 0 0.001"
+        video-fx="opacity: 0.9; softness: 0.3"
+      ></a-video>
     </a-entity>
 
   </a-scene>
@@ -153,28 +159,63 @@
 
     function playAudio(audioEl){
       if(!audioEl) return;
-      try{
-        audioEl.currentTime = 0;
-        audioEl.play().catch(()=>{});
-      }catch(e){}
+      try{ audioEl.currentTime = 0; audioEl.play().catch(()=>{}); }catch(e){}
     }
 
-    /* =========================================================
-       HTML OVERLAY CONTROLLER (UPDATED)
-       - Đọc dữ liệu từ data-title/data-desc thay vì schema
-       ========================================================= */
+    /* -------------------------------------------------------------
+       COMPONENT 1: VIDEO FX (Làm mờ viền + Hòa trộn nền)
+       ------------------------------------------------------------- */
+    AFRAME.registerComponent('video-fx', {
+      schema: {
+        opacity: {type: 'number', default: 0.9}, 
+        softness: {type: 'number', default: 0.2}
+      },
+      init: function () {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256; canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+        const gradient = ctx.createRadialGradient(
+          canvas.width / 2, canvas.height / 2, 0,
+          canvas.width / 2, canvas.height / 2, canvas.width / 2
+        );
+        const start = Math.max(0, 1.0 - this.data.softness * 2);
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 1)'); 
+        gradient.addColorStop(start, 'rgba(255, 255, 255, 1)'); 
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        const maskTexture = new THREE.CanvasTexture(canvas);
+
+        this.el.addEventListener('materialtextureloaded', () => {
+          const mesh = this.el.getObject3D('mesh');
+          if (mesh && mesh.material) {
+            mesh.material.alphaMap = maskTexture;
+            mesh.material.transparent = true;
+            mesh.material.opacity = this.data.opacity;
+            // Additive Blending: Làm video sáng lên và hòa vào nền (loại bỏ màu đen)
+            // Nếu muốn video đặc hơn thì comment dòng này lại
+            mesh.material.blending = THREE.AdditiveBlending; 
+            mesh.material.needsUpdate = true;
+          }
+        });
+      }
+    });
+
+    /* -------------------------------------------------------------
+       COMPONENT 2: HTML OVERLAY (Text hiển thị trên màn hình)
+       ------------------------------------------------------------- */
     AFRAME.registerComponent("html-overlay-controller", {
       schema: {
         delay: {type: "number", default: 3000},
         audio: {type: "selector"}
-        // Không khai báo title/desc ở đây nữa để tránh parser làm lỗi font
       },
       init() {
         this.uiPanel = document.getElementById("info-panel");
         this.uiTitle = document.getElementById("ui-title");
         this.uiDesc = document.getElementById("ui-desc");
         
-        // Lấy text trực tiếp từ attribute HTML (an toàn nhất)
         this.fullTitle = this.el.getAttribute("data-title") || "";
         this.fullDesc = this.el.getAttribute("data-desc") || "";
 
@@ -187,10 +228,8 @@
       },
       
       onFound() {
-        // Xóa nội dung cũ
         this.uiTitle.textContent = "";
         this.uiDesc.textContent = "";
-        
         this.startTimer = setTimeout(() => { this.showPanel(); }, this.data.delay);
       },
 
@@ -202,25 +241,19 @@
 
       showPanel() {
         this.uiPanel.classList.add("visible");
+        // playAudio(this.data.audio); // Bỏ comment nếu muốn phát nhạc lại
         
         let i = 0;
-        const totalLen = this.fullTitle.length + this.fullDesc.length;
-        
         const typeLoop = () => {
-          // Chạy Title trước
           if (i < this.fullTitle.length) {
             this.uiTitle.textContent += this.fullTitle.charAt(i);
             i++;
-            // Tốc độ title nhanh (30ms)
             this.typingTimer = setTimeout(typeLoop, 30);
-          } 
-          // Chạy Desc sau
-          else {
+          } else {
             const descIndex = i - this.fullTitle.length;
             if (descIndex < this.fullDesc.length) {
               this.uiDesc.textContent += this.fullDesc.charAt(descIndex);
               i++;
-              // Tốc độ desc nhanh hơn tí (20ms) cho mượt
               this.typingTimer = setTimeout(typeLoop, 20);
             }
           }
@@ -229,9 +262,9 @@
       }
     });
 
-    /* =========================================================
-       CÁC COMPONENT KHÁC (GIỮ NGUYÊN)
-       ========================================================= */
+    /* -------------------------------------------------------------
+       COMPONENT 3: REVEAL MODEL (Hiệu ứng bay lên)
+       ------------------------------------------------------------- */
     AFRAME.registerComponent("reveal-model", {
       schema: {
         duration:{type:"number",default:3000},
@@ -270,6 +303,9 @@
       }
     });
 
+    /* -------------------------------------------------------------
+       CÁC COMPONENT PHỤ TRỢ KHÁC
+       ------------------------------------------------------------- */
     AFRAME.registerComponent("slow-spin", {
       init(){
         this.el.setAttribute("animation__spin", { property:"rotation", to:"0 0 360", loop:true, dur:14000, easing:"linear" });
@@ -325,5 +361,3 @@
   </script>
 </body>
 </html>
-
-
