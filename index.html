@@ -82,32 +82,23 @@
     </a-entity>
 
     <!-- =========================
-         TARGET 1 – 3D MODEL (GROUND IMAGE)
-         - Ảnh nằm ngang (đặt trên mặt đất)
-         - Model vẫn quay quanh trục "thẳng đứng" như lúc treo tường
-         - Model nằm "trên" ảnh (nhô lên khỏi mặt đất), không còn ở "trước" ảnh
+         TARGET 1 – 3D MODEL
          ========================= -->
     <a-entity mindar-image-target="targetIndex: 1">
-      <!-- Xoay hệ trục để marker trở thành mặt đất: trục Z sẽ là "lên/xuống" -->
-      <a-entity id="ground-anchor" rotation="-90 0 0">
-        <!-- Wrapper chỉ để quay quanh trục thẳng đứng (world up) sau khi đã xoay ground -->
-        <a-entity id="spin" slow-spin-vertical>
-          <a-entity
-            id="model"
-            gltf-model="url(model.glb)"
-            rotation="90 0 0"
-            reveal-model="duration: 3000; audio: #audio2;
-                          startScale: 0.001 0.001 0.001;
-                          finalScale: 0.4 0.4 0.4;
-                          startPos: 0 0 0.02;
-                          finalPos: 0 0 0.15"
-            transparent-model="opacity: 0.6"
-          ></a-entity>
-        </a-entity>
-      </a-entity>
+      <a-entity
+        id="model"
+        gltf-model="url(model.glb)"
+        reveal-model="duration: 3000; audio: #audio2;
+                      startScale: 0.001 0.001 0.001;
+                      finalScale: 0.4 0.4 0.4;
+                      startPos: 0 0.08 0;
+                      finalPos: 0 0.32 0"
+        slow-spin
+        transparent-model="opacity: 0.6"
+      ></a-entity>
     </a-entity>
 
-<!-- =========================
+    <!-- =========================
          TARGET 2 – VIDEO ON WALL (16:9)
          ========================= -->
     <a-entity mindar-image-target="targetIndex: 2" video-on-target="video: #video1; restart: true">
@@ -252,21 +243,10 @@
     AFRAME.registerComponent("slow-spin", {
       init(){
         this.el.setAttribute("animation__spin", {
-          property:"rotation", to:"0 360 0", loop:true, dur:14000, easing:"linear"
+          property:"rotation", to:"360 0 0", loop:true, dur:14000, easing:"linear"
         });
       }
     });
-
-    // Quay "đúng trục thẳng đứng" khi marker nằm ngang (đã xoay ground-anchor -90° X)
-    // Sau khi xoay ground-anchor, trục Z chính là trục "lên/xuống" => quay quanh Z sẽ là quay quanh trục thẳng đứng ngoài đời.
-    AFRAME.registerComponent("slow-spin-vertical", {
-      init(){
-        this.el.setAttribute("animation__spinVertical", {
-          property:"rotation", to:"0 0 360", loop:true, dur:14000, easing:"linear"
-        });
-      }
-    });
-
 
     AFRAME.registerComponent("transparent-model", {
       schema:{ opacity:{type:"number",default:0.6} },
