@@ -95,7 +95,7 @@
       
       <!-- Ground-style rig: xoay nội dung để phù hợp ảnh đặt nằm (mặt đất) -->
       <a-entity id="groundRig"
-        rotation="-90 0 0"
+        rotation="90 0 0"
         ring-model-sync="ring: #ringDisc; model: #model; speedDeg: 26; enabled: false"
         ground-trigger="ring: #ringDisc; beam: #beamFx; model: #model; audio: #audio2;
                         duration: 2400;
@@ -106,7 +106,7 @@
         <a-circle id="ringDisc"
           radius="0.42"
           position="0 0 0.002"
-          rotation="-90 0 0"
+          rotation="0 0 0"
           material="transparent:true; opacity:0; side:double"
           magic-ring="baseHue: 190; hueSpan: 120; glow: 1; thickness: 0.18"
         ></a-circle>
@@ -115,25 +115,34 @@
         <a-ring
           radius-inner="0.40"
           radius-outer="0.42"
-          rotation="-90 0 0"
+          rotation="0 0 0"
           position="0 0 0.003"
           material="color:#7ff6ff; shader:flat; transparent:true; opacity:0;"
         ></a-ring>
 
-        <!-- Cột sáng/sóng phát lên từ vòng tròn (chỉ là hiệu ứng vật liệu, không phải light thật) -->
+        <!-- Ánh sáng "thật" dạng hình nón ngược: chóp ở mặt ảnh, đáy ở gần model, mờ dần -->
         <a-entity id="beamFx"
-          geometry="primitive: cylinder; radius: 0.18; height: 0.55"
-          position="0 0.28 0"
+          geometry="primitive: cone; radiusBottom: 0.03; radiusTop: 0.26; height: 0.62; segmentsRadial: 36"
+          position="0 0.30 0"
           rotation="0 0 0"
-          material="color:#00E5FF; transparent:true; opacity:0; side:double; blending:additive"
-          pulse-beam="min:0.06; max:0.18; speed:1.4"
+          material="color:#00E5FF; transparent:true; opacity:0; side:double; blending:additive; depthWrite:false"
+          cone-glow="min:0.10; max:0.22; speed:1.15"
+        ></a-entity>
+
+        <!-- Lớp nón trong (sáng hơn, nhỏ hơn) để tạo cảm giác gradient -->
+        <a-entity id="beamFxInner"
+          geometry="primitive: cone; radiusBottom: 0.02; radiusTop: 0.18; height: 0.55; segmentsRadial: 28"
+          position="0 0.27 0"
+          rotation="0 0 0"
+          material="color:#ffffff; transparent:true; opacity:0; side:double; blending:additive; depthWrite:false"
+          cone-glow="min:0.06; max:0.14; speed:1.35"
         ></a-entity>
 
         <!-- Model trồi lên từ mặt ảnh -->
         <a-entity
           id="model"
           gltf-model="url(model.glb)"
-          transparent-model="opacity: 0.98"
+          transparent-model="opacity: 0.85"
         ></a-entity>
       </a-entity></a-entity>
 
@@ -778,6 +787,8 @@
         if(this.data.beam){
           this.data.beam.setAttribute("material","opacity",0);
         }
+        const beamInner = this.el.querySelector("#beamFxInner");
+        if(beamInner){ beamInner.setAttribute("material","opacity",0); }
 
         // model reset
         const m = this.data.model;
@@ -814,8 +825,10 @@
 
         // beam bật
         if(this.data.beam){
-          this.data.beam.setAttribute("material","opacity",0.12);
+          this.data.beam.setAttribute("material","opacity",0.14);
         }
+        const beamInner = this.el.querySelector("#beamFxInner");
+        if(beamInner){ beamInner.setAttribute("material","opacity",0.10); }
 
         // model trồi lên
         const m = this.data.model;
@@ -850,6 +863,26 @@
         }));
       }
     });
+    /* =========================================================
+       CONE GLOW:
+       - Pulse opacity + "breathing" scale để giống ánh sáng thật
+       ========================================================= */
+    AFRAME.registerComponent("cone-glow", {
+      schema: { min:{type:"number",default:0.10}, max:{type:"number",default:0.22}, speed:{type:"number",default:1.15} },
+      init(){
+        this._baseScale = this.el.getAttribute("scale") || {x:1,y:1,z:1};
+      },
+      tick(t){
+        const s = (t/1000)*this.data.speed*2*Math.PI;
+        const a = this.data.min + (this.data.max - this.data.min) * (0.5 + 0.5*Math.sin(s));
+        this.el.setAttribute("material", "opacity", a);
+
+        // nhẹ nhàng phồng theo nhịp (không che model vì blending:additive + depthWrite:false)
+        const k = 1 + 0.04*(0.5 + 0.5*Math.sin(s*0.6));
+        this.el.setAttribute("scale", `${this._baseScale.x*k} ${this._baseScale.y} ${this._baseScale.z*k}`);
+      }
+    });
+
   </script>
 </body>
 </html>
