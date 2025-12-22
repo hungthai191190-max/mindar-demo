@@ -59,6 +59,12 @@
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
+    <!-- Base lights để model không bị đen (ổn định trên mobile) -->
+    <a-entity id="baseLightAmbient" light="type: ambient; intensity: 0.85; color: #ffffff"></a-entity>
+    <a-entity id="baseLightKey" light="type: directional; intensity: 1.35; color: #ffffff" position="0.6 1.2 1.2"></a-entity>
+    <a-entity id="baseLightRim" light="type: directional; intensity: 0.75; color: #b7d7ff" position="-0.8 0.9 -1.0"></a-entity>
+
+
     <!-- =========================
          TARGET 0 – TEXT
          ========================= -->
@@ -85,18 +91,69 @@
          TARGET 1 – 3D MODEL
          ========================= -->
     <a-entity mindar-image-target="targetIndex: 1">
+      
+      
+      <!-- Ground-style rig: xoay nội dung để phù hợp ảnh đặt nằm (mặt đất) -->
+      <a-entity id="groundRig"
+        rotation="90 0 0"
+        ring-model-sync="ring: #ringDisc; model: #model; speedDeg: 26; enabled: false"
+        ground-trigger="ring: #ringDisc; beam: #beamFx; model: #model; audio: #audio2;
+                        duration: 2400;
+                        startScale: 0.001 0.001 0.001; finalScale: 0.42 0.42 0.42;
+                        startPos: 0 0.02 0; finalPos: 0 0.26 0"
+      >
+        <!-- Vòng tròn có hiệu ứng "đổi màu/điểm sáng chạy" để nhìn rõ đang quay -->
+        <a-circle id="ringDisc"
+          radius="0.42"
+          position="0 0 0.002"
+          rotation="0 0 0"
+          material="transparent:true; opacity:0; side:double"
+          magic-ring="baseHue: 190; hueSpan: 120; glow: 1; thickness: 0.18"
+        ></a-circle>
+
+        <!-- Viền ring mỏng (tạo cảm giác sắc nét) -->
+        <a-ring
+          radius-inner="0.40"
+          radius-outer="0.42"
+          rotation="0 0 0"
+          position="0 0 0.003"
+          material="color:#7ff6ff; shader:flat; transparent:true; opacity:0;"
+        ></a-ring>
+
+        <!-- Ánh sáng "thật" dạng hình nón ngược: chóp ở mặt ảnh, đáy ở gần model, mờ dần -->
+        <a-entity id="beamFx"
+          geometry="primitive: cone; radiusBottom: 0.03; radiusTop: 0.26; height: 0.62; segmentsRadial: 36"
+          position="0 0.30 0"
+          rotation="0 0 0"
+          material="color:#00E5FF; transparent:true; opacity:0; side:double; blending:additive; depthWrite:false"
+          cone-glow="min:0.10; max:0.22; speed:1.15"
+        ></a-entity>
+
+        <!-- Lớp nón trong (sáng hơn, nhỏ hơn) để tạo cảm giác gradient -->
+        <a-entity id="beamFxInner"
+          geometry="primitive: cone; radiusBottom: 0.02; radiusTop: 0.18; height: 0.55; segmentsRadial: 28"
+          position="0 0.27 0"
+          rotation="0 0 0"
+          material="color:#ffffff; transparent:true; opacity:0; side:double; blending:additive; depthWrite:false"
+          cone-glow="min:0.06; max:0.14; speed:1.35"
+        ></a-entity>
+
+        <!-- Model trồi lên từ mặt ảnh -->
+        <a-entity
+          id="model"
+          gltf-model="url(model.glb)"
+          transparent-model="opacity: 0.85"
+        ></a-entity>
+      </a-entity></a-entity>
+
       <a-entity
         id="model"
         gltf-model="url(model.glb)"
-	  rotation="90 0 0"
-        reveal-model="duration: 3000; audio: #audio2;
-                      startScale: 0.001 0.001 0.001;
-                      finalScale: 0.4 0.4 0.4;
-                      startPos: 0 0.08 0;
-                      finalPos: 0 0.32 0"
-        slow-spin
-        transparent-model="opacity: 0.6"
-      ></a-entity>
+        cinematic-reveal="duration: 2600; rise: 0.32; spinDelay: 900; ring: #ringFx; spot: #spotFx; audio: #audio2;
+                          startScale: 0.001 0.001 0.001; finalScale: 0.42 0.42 0.42;
+                          startPos: 0 0.08 0; finalPos: 0 0.32 0"
+        transparent-model="opacity: 0.95"
+      ></a-entity></a-entity>
     </a-entity>
 
     <!-- =========================
@@ -244,7 +301,7 @@
     AFRAME.registerComponent("slow-spin", {
       init(){
         this.el.setAttribute("animation__spin", {
-          property:"rotation", to:"0 0 360", loop:true, dur:14000, easing:"linear"
+          property:"rotation", to:"0 360 0", loop:true, dur:14000, easing:"linear"
         });
       }
     });
@@ -342,6 +399,490 @@
         }
       }
     });
+
+    /* =========================================================
+       CINEMATIC MODEL REVEAL:
+       - Ban đầu: ẩn (scale nhỏ)
+       - Ánh sáng quét quanh ảnh (ring + spotlight orbit)
+       - Model trồi lên + pop overshoot
+       - Lên cao 1 đoạn thì bắt đầu xoay tròn chậm (spinDelay)
+       ========================================================= */
+    AFRAME.registerComponent("cinematic-reveal", {
+      schema: {
+        duration: { type: "number", default: 2600 },
+        rise: { type: "number", default: 0.32 },
+        spinDelay: { type: "number", default: 900 },
+        ring: { type: "selector" },
+        spot: { type: "selector" },
+        audio: { type: "selector" },
+
+        // giữ tương thích với cấu hình cũ
+        startScale: { type: "vec3", default: { x: 0.001, y: 0.001, z: 0.001 } },
+        finalScale: { type: "vec3", default: { x: 0.42, y: 0.42, z: 0.42 } },
+        startPos: { type: "vec3", default: { x: 0, y: 0.08, z: 0 } },
+        finalPos: { type: "vec3", default: { x: 0, y: 0.32, z: 0 } }
+      },
+
+      init() {
+        this.target = this.el.closest("[mindar-image-target]");
+        this.running = false;
+
+        this._resetHard();
+
+        this._onFound = () => this.start();
+        this._onLost  = () => this._resetHard();
+
+        this.target.addEventListener("targetFound", this._onFound);
+        this.target.addEventListener("targetLost", this._onLost);
+      },
+
+      _resetHard() {
+        this.running = false;
+
+        // MODEL reset
+        this.el.removeAttribute("animation__scale");
+        this.el.removeAttribute("animation__pos");
+        this.el.removeAttribute("animation__rot");
+        this.el.removeAttribute("animation__rot_settle");
+        this.el.removeAttribute("animation__spin");
+
+        const ss = this.data.startScale;
+        const sp = this.data.startPos;
+
+        this.el.setAttribute("scale", `${ss.x} ${ss.y} ${ss.z}`);
+        this.el.setAttribute("position", `${sp.x} ${sp.y} ${sp.z}`);
+        this.el.setAttribute("rotation", `0 0 0`);
+
+        if (this.el.object3D) {
+          this.el.object3D.scale.set(ss.x, ss.y, ss.z);
+          this.el.object3D.position.set(sp.x, sp.y, sp.z);
+          this.el.object3D.rotation.set(0, 0, 0);
+        }
+
+        // RING reset
+        const ring = this.data.ring;
+        if (ring) {
+          ring.removeAttribute("animation__ringIn");
+          ring.removeAttribute("animation__ringSpin");
+          ring.removeAttribute("animation__ringDim");
+          ring.setAttribute("material", "opacity:0;");
+          ring.setAttribute("rotation", "-90 0 0");
+        }
+
+        // SPOT reset
+        const spot = this.data.spot;
+        if (spot) {
+          spot.removeAttribute("animation__spotIn");
+          spot.removeAttribute("animation__spotOrbit");
+          spot.removeAttribute("animation__spotDim");
+          spot.setAttribute("light", "intensity:0;");
+          spot.setAttribute("position", "0 0.25 0.6");
+          spot.setAttribute("rotation", "-20 0 0");
+        }
+      },
+
+      start() {
+        if (this.running) return;
+        this.running = true;
+
+        // luôn reset trước khi start để chắc chắn chạy lại khi rescan
+        this._resetHard();
+
+        // audio
+        playAudio(this.data.audio);
+
+        const ring = this.data.ring;
+        const spot = this.data.spot;
+
+        // 1) RING: bật + quay quét
+        if (ring) {
+          ring.setAttribute("animation__ringIn", {
+            property: "material.opacity",
+            to: 0.75,
+            dur: 280,
+            easing: "easeOutCubic"
+          });
+          ring.setAttribute("animation__ringSpin", {
+            property: "rotation",
+            to: "-90 360 0",
+            dur: 900,
+            loop: true,
+            easing: "linear"
+          });
+        }
+
+        // 2) SPOT: bật + orbit
+        if (spot) {
+          spot.setAttribute("animation__spotIn", {
+            property: "light.intensity",
+            to: 1.2,
+            dur: 250,
+            easing: "easeOutCubic"
+          });
+          spot.setAttribute("animation__spotOrbit", {
+            property: "rotation",
+            to: "-20 360 0",
+            dur: 1200,
+            loop: true,
+            easing: "linear"
+          });
+        }
+
+        // 3) MODEL: trồi lên + pop overshoot + tilt settle
+        const dur = this.data.duration;
+        const fs = this.data.finalScale;
+        const fp = this.data.finalPos;
+
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          // pop scale
+          this.el.setAttribute("animation__scale", {
+            property: "scale",
+            to: `${fs.x} ${fs.y} ${fs.z}`,
+            dur: Math.floor(dur * 0.65),
+            easing: "easeOutBack"
+          });
+
+          // rise position
+          this.el.setAttribute("animation__pos", {
+            property: "position",
+            to: `${fp.x} ${fp.y} ${fp.z}`,
+            dur: dur,
+            easing: "easeOutCubic"
+          });
+
+          // tilt nhẹ
+          this.el.setAttribute("animation__rot", {
+            property: "rotation",
+            to: "8 0 0",
+            dur: 260,
+            easing: "easeOutCubic"
+          });
+
+          // settle tilt về 0
+          setTimeout(() => {
+            if (!this.running) return;
+            this.el.setAttribute("animation__rot_settle", {
+              property: "rotation",
+              to: "0 0 0",
+              dur: 520,
+              easing: "easeOutCubic"
+            });
+          }, 280);
+
+          // 4) spin chậm sau khi đã lên cao 1 đoạn
+          setTimeout(() => {
+            if (!this.running) return;
+
+            this.el.setAttribute("animation__spin", {
+              property: "rotation",
+              to: "0 360 0",
+              loop: true,
+              dur: 14000,
+              easing: "linear"
+            });
+
+            // Dim ring/spot để chuyển sang trạng thái trưng bày
+            if (ring) {
+              ring.setAttribute("animation__ringDim", {
+                property: "material.opacity",
+                to: 0.25,
+                dur: 450,
+                easing: "easeOutCubic"
+              });
+            }
+            if (spot) {
+              spot.setAttribute("animation__spotDim", {
+                property: "light.intensity",
+                to: 0.7,
+                dur: 450,
+                easing: "easeOutCubic"
+              });
+            }
+          }, this.data.spinDelay);
+        }));
+      }
+    });
+
+    /* =========================================================
+       MAGIC RING (canvas texture):
+       - Vòng tròn có "điểm sáng" chạy + gradient đổi màu => nhìn rõ đang quay
+       - Không dùng light thật (nhẹ, không ảnh hưởng default/base lights)
+       ========================================================= */
+    AFRAME.registerComponent("magic-ring", {
+      schema: {
+        baseHue:   { type: "number", default: 190 },
+        hueSpan:   { type: "number", default: 120 },
+        thickness: { type: "number", default: 0.18 }, // 0..1 (tương đối)
+        glow:      { type: "number", default: 1 }
+      },
+      init() {
+        // tạo canvas texture
+        const size = 512;
+        this.canvas = document.createElement("canvas");
+        this.canvas.width = size;
+        this.canvas.height = size;
+        this.ctx = this.canvas.getContext("2d");
+
+        // A-Frame hỗ trợ material src = canvas
+        this.el.setAttribute("material", { src: this.canvas, transparent: true, opacity: 0 });
+
+        this.phase = 0; // radians
+        this._draw();
+      },
+      setPhase(rad) {
+        this.phase = rad;
+        this._draw();
+      },
+      _draw() {
+        const ctx = this.ctx;
+        const w = this.canvas.width, h = this.canvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        const cx = w/2, cy = h/2;
+        const rOuter = Math.min(w, h) * 0.46;
+        const rInner = rOuter * (1 - Math.max(0.08, Math.min(0.45, this.data.thickness)));
+
+        // nền mờ nhẹ
+        ctx.globalCompositeOperation = "source-over";
+        ctx.fillStyle = "rgba(0,0,0,0)";
+        ctx.fillRect(0,0,w,h);
+
+        // Vòng gradient theo góc: vẽ nhiều cung nhỏ
+        const segments = 96;
+        for (let i=0;i<segments;i++){
+          const t0 = (i/segments)*Math.PI*2;
+          const t1 = ((i+1)/segments)*Math.PI*2;
+
+          // màu đổi theo góc + phase
+          const hue = (this.data.baseHue + this.data.hueSpan * Math.sin(t0 + this.phase)) % 360;
+          const alpha = 0.35 + 0.25 * (0.5 + 0.5*Math.sin(t0*3 + this.phase*2));
+          ctx.strokeStyle = `hsla(${hue}, 95%, 60%, ${alpha})`;
+          ctx.lineWidth = rOuter - rInner;
+          ctx.beginPath();
+          ctx.arc(cx, cy, (rOuter + rInner)/2, t0, t1);
+          ctx.stroke();
+        }
+
+        // "điểm sáng" chạy (wedge)
+        const head = this.phase % (Math.PI*2);
+        const wedge = 0.35; // rad
+        const grad = ctx.createRadialGradient(cx, cy, rInner*0.7, cx, cy, rOuter*1.02);
+        grad.addColorStop(0.0, "rgba(255,255,255,0.0)");
+        grad.addColorStop(0.75, "rgba(255,255,255,0.18)");
+        grad.addColorStop(1.0, "rgba(255,255,255,0.0)");
+
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, rOuter*1.02, head-wedge, head+wedge);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        // Bloom vòng ngoài
+        if (this.data.glow > 0){
+          ctx.save();
+          ctx.globalCompositeOperation = "lighter";
+          ctx.strokeStyle = "rgba(0,229,255,0.18)";
+          ctx.lineWidth = 10;
+          ctx.beginPath();
+          ctx.arc(cx, cy, rOuter*0.98, 0, Math.PI*2);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+    });
+
+    /* =========================================================
+       SYNC SPIN:
+       - Quay model quanh trục đứng (Y) + điều khiển phase của magic-ring
+       - speedDeg: độ/giây
+       ========================================================= */
+    AFRAME.registerComponent("ring-model-sync", {
+      schema: {
+        ring: { type: "selector" },
+        model: { type: "selector" },
+        speedDeg: { type: "number", default: 26 },
+        enabled: { type: "boolean", default: false }
+      },
+      init(){
+        this._t0 = null;
+      },
+      tick(t){
+        if(!this.data.enabled) return;
+        if(this._t0 === null) this._t0 = t;
+
+        const dt = (t - this._t0) / 1000;
+        const rad = (dt * this.data.speedDeg) * Math.PI / 180;
+
+        // model quay quanh trục đứng
+        if(this.data.model){
+          // giữ tilt = 0, chỉ quay y
+          this.data.model.object3D.rotation.y = rad;
+        }
+
+        // ring đổi phase theo cùng tốc độ
+        if(this.data.ring && this.data.ring.components["magic-ring"]){
+          this.data.ring.components["magic-ring"].setPhase(rad);
+          // đảm bảo texture update
+          const mat = this.data.ring.getObject3D("mesh")?.material;
+          if(mat && mat.map) mat.map.needsUpdate = true;
+        }
+      }
+    });
+
+    /* =========================================================
+       PULSE BEAM:
+       - Cột sáng/sóng phát lên từ vòng tròn
+       ========================================================= */
+    AFRAME.registerComponent("pulse-beam", {
+      schema: { min:{type:"number",default:0.06}, max:{type:"number",default:0.18}, speed:{type:"number",default:1.4} },
+      tick(t){
+        const a = this.data.min + (this.data.max - this.data.min) * (0.5 + 0.5*Math.sin((t/1000)*this.data.speed*2*Math.PI));
+        this.el.setAttribute("material", "opacity", a);
+      }
+    });
+
+    /* =========================================================
+       GROUND TRIGGER:
+       - reset khi lost
+       - found: ring hiện + beam hiện + model trồi lên
+       - sau khi trồi lên: bật sync spin để model quay cùng tốc độ ring
+       ========================================================= */
+    AFRAME.registerComponent("ground-trigger", {
+      schema: {
+        ring: { type: "selector" },
+        beam: { type: "selector" },
+        model: { type: "selector" },
+        audio: { type: "selector" },
+        duration: { type: "number", default: 2400 },
+        startScale: { type: "vec3" },
+        finalScale: { type: "vec3" },
+        startPos: { type: "vec3" },
+        finalPos: { type: "vec3" }
+      },
+      init(){
+        this.target = this.el.closest("[mindar-image-target]");
+        this._reset();
+
+        this.target.addEventListener("targetFound", ()=>this._start());
+        this.target.addEventListener("targetLost", ()=>this._reset());
+      },
+      _reset(){
+        // tắt sync
+        this.el.setAttribute("ring-model-sync", "enabled: false");
+        const sync = this.el.components["ring-model-sync"];
+        if(sync) sync._t0 = null;
+
+        // ring/beam ẩn
+        if(this.data.ring){
+          this.data.ring.setAttribute("material", "opacity", 0);
+        }
+        // ring viền (a-ring) ngay sau circle: set opacity 0
+        const ringOutline = this.el.querySelector("a-ring");
+        if(ringOutline) ringOutline.setAttribute("material","opacity",0);
+
+        if(this.data.beam){
+          this.data.beam.setAttribute("material","opacity",0);
+        }
+        const beamInner = this.el.querySelector("#beamFxInner");
+        if(beamInner){ beamInner.setAttribute("material","opacity",0); }
+
+        // model reset
+        const m = this.data.model;
+        if(m){
+          m.removeAttribute("animation__scale");
+          m.removeAttribute("animation__pos");
+          m.setAttribute("rotation", "0 0 0");
+          const ss = this.data.startScale, sp = this.data.startPos;
+          m.setAttribute("scale", `${ss.x} ${ss.y} ${ss.z}`);
+          m.setAttribute("position", `${sp.x} ${sp.y} ${sp.z}`);
+          if(m.object3D){
+            m.object3D.scale.set(ss.x, ss.y, ss.z);
+            m.object3D.position.set(sp.x, sp.y, sp.z);
+            m.object3D.rotation.set(0,0,0);
+          }
+        }
+      },
+      _start(){
+        // audio
+        playAudio(this.data.audio);
+
+        // ring hiện rõ
+        if(this.data.ring){
+          this.data.ring.setAttribute("animation__ringIn", {
+            property: "material.opacity", to: 0.95, dur: 220, easing: "easeOutCubic"
+          });
+        }
+        const ringOutline = this.el.querySelector("a-ring");
+        if(ringOutline){
+          ringOutline.setAttribute("animation__outlineIn", {
+            property: "material.opacity", to: 0.65, dur: 220, easing: "easeOutCubic"
+          });
+        }
+
+        // beam bật
+        if(this.data.beam){
+          this.data.beam.setAttribute("material","opacity",0.14);
+        }
+        const beamInner = this.el.querySelector("#beamFxInner");
+        if(beamInner){ beamInner.setAttribute("material","opacity",0.10); }
+
+        // model trồi lên
+        const m = this.data.model;
+        const dur = this.data.duration;
+        const fs = this.data.finalScale, fp = this.data.finalPos;
+
+        // ép reset nhỏ ngay lúc found
+        const ss = this.data.startScale, sp = this.data.startPos;
+        m.setAttribute("scale", `${ss.x} ${ss.y} ${ss.z}`);
+        m.setAttribute("position", `${sp.x} ${sp.y} ${sp.z}`);
+
+        requestAnimationFrame(()=>requestAnimationFrame(()=>{
+          m.setAttribute("animation__scale", {
+            property:"scale",
+            to:`${fs.x} ${fs.y} ${fs.z}`,
+            dur: Math.floor(dur*0.7),
+            easing:"easeOutBack"
+          });
+          m.setAttribute("animation__pos", {
+            property:"position",
+            to:`${fp.x} ${fp.y} ${fp.z}`,
+            dur: dur,
+            easing:"easeOutCubic"
+          });
+
+          // bật sync quay NGAY khi model bắt đầu rõ (không phụ thuộc delay nữa)
+          setTimeout(()=>{
+            this.el.setAttribute("ring-model-sync", "enabled: true");
+            const sync = this.el.components["ring-model-sync"];
+            if(sync) sync._t0 = null;
+          }, 180);
+        }));
+      }
+    });
+    /* =========================================================
+       CONE GLOW:
+       - Pulse opacity + "breathing" scale để giống ánh sáng thật
+       ========================================================= */
+    AFRAME.registerComponent("cone-glow", {
+      schema: { min:{type:"number",default:0.10}, max:{type:"number",default:0.22}, speed:{type:"number",default:1.15} },
+      init(){
+        this._baseScale = this.el.getAttribute("scale") || {x:1,y:1,z:1};
+      },
+      tick(t){
+        const s = (t/1000)*this.data.speed*2*Math.PI;
+        const a = this.data.min + (this.data.max - this.data.min) * (0.5 + 0.5*Math.sin(s));
+        this.el.setAttribute("material", "opacity", a);
+
+        // nhẹ nhàng phồng theo nhịp (không che model vì blending:additive + depthWrite:false)
+        const k = 1 + 0.04*(0.5 + 0.5*Math.sin(s*0.6));
+        this.el.setAttribute("scale", `${this._baseScale.x*k} ${this._baseScale.y} ${this._baseScale.z*k}`);
+      }
+    });
+
   </script>
 </body>
 </html>
