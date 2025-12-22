@@ -84,18 +84,25 @@
     <!-- =========================
          TARGET 1 – 3D MODEL
          ========================= -->
+    
     <a-entity mindar-image-target="targetIndex: 1">
-      <a-entity
-        id="model"
-        gltf-model="url(model.glb)"
-        rotation="-90 0 0"
-        reveal-model="duration: 3000; audio: #audio2;
-                      startScale: 0.001 0.001 0.001;
-                      finalScale: 0.4 0.4 0.4;
-                      startPos:  0 0 0.02;
-                      finalPos:  0 0 0.28" upright-spin="speed: 26"
-        transparent-model="opacity: 0.6"
-      ></a-entity>
+      <!-- Spin root: quay đúng quanh trục Y (trục đứng) -->
+      <a-entity id="model-spin-root" spin-y="speed: 26">
+
+        <!-- Model child: chỉ chỉnh hướng để phù hợp ảnh đặt nằm trên mặt đất -->
+        <a-entity
+          id="model"
+          gltf-model="url(model.glb)"
+          rotation="-90 0 0"
+          reveal-model="duration: 3000; audio: #audio2;
+                        startScale: 0.001 0.001 0.001;
+                        finalScale: 0.4 0.4 0.4;
+                        startPos: 0 0 0.02;
+                        finalPos: 0 0 0.28"
+          transparent-model="opacity: 0.85"
+        ></a-entity>
+
+      </a-entity>
     </a-entity>
 
     <!-- =========================
@@ -343,11 +350,11 @@
     });
 
     /* =========================================================
-       UPRIGHT SPIN:
-       - Quay quanh trục đứng (trục Y local) mà KHÔNG phá rotation X/Z nền
-       - Dùng tick để tránh animation 'rotation: 0 360 0' làm mất góc -90
+       SPIN-Y (world-up):
+       - Quay quanh trục Y của entity CHA (model-spin-root)
+       - Tránh xoay lộn trục khi model con có rotation -90
        ========================================================= */
-    AFRAME.registerComponent("upright-spin", {
+    AFRAME.registerComponent("spin-y", {
       schema: { speed: { type: "number", default: 26 } }, // deg/sec
       tick: function (t, dt) {
         if (!dt) return;
