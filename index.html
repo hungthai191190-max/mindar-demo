@@ -6,7 +6,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
   />
-  <title>MindAR – 3 Targets (Text + 3D Clock Hand + Video)</title>
+  <title>MindAR – Target 1 Update</title>
 
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
@@ -61,27 +61,18 @@
         position="0 0.2 0"
         reveal-typewriter="text: PHÒNG TRUYỀN THỐNG\nNĂM 1990; duration: 3000; audio: #audio1"
       >
-        <a-troika-text class="tw" value="" color="#000000" opacity="0.55"
-          fontSize="0.10" maxWidth="2.2" align="center" anchor="center"
-          position="0.02 -0.02 -0.03"></a-troika-text>
-
-        <a-troika-text class="tw" value="" color="#00E5FF" opacity="0.35"
-          fontSize="0.10" maxWidth="2.2" align="center" anchor="center"
-          position="0 0 -0.02"></a-troika-text>
-
-        <a-troika-text class="tw" value="" color="#FFD700" opacity="1"
-          fontSize="0.10" maxWidth="2.2" align="center" anchor="center"
-          position="0 0 0"></a-troika-text>
+        <a-troika-text class="tw" value="" color="#000000" opacity="0.55" fontSize="0.10" maxWidth="2.2" align="center" anchor="center" position="0.02 -0.02 -0.03"></a-troika-text>
+        <a-troika-text class="tw" value="" color="#00E5FF" opacity="0.35" fontSize="0.10" maxWidth="2.2" align="center" anchor="center" position="0 0 -0.02"></a-troika-text>
+        <a-troika-text class="tw" value="" color="#FFD700" opacity="1" fontSize="0.10" maxWidth="2.2" align="center" anchor="center" position="0 0 0"></a-troika-text>
       </a-entity>
     </a-entity>
 
     <a-entity mindar-image-target="targetIndex: 1">
+      
       <a-entity
         reveal-model="duration: 3000; audio: #audio2;
-                      startScale: 0.001 0.001 0.001;
-                      finalScale: 0.4 0.4 0.4;
-                      startPos: 0 0.08 0;
-                      finalPos: 0 0.32 0"
+                      startScale: 0.001 0.001 0.001; finalScale: 0.4 0.4 0.4;
+                      startPos: 0 0.08 0; finalPos: 0 0.32 0"
         slow-spin
       >
         <a-entity
@@ -91,17 +82,41 @@
           transparent-model="opacity: 0.6"
         ></a-entity>
       </a-entity>
+
+      <a-entity
+        position="0 -0.45 0"
+        delayed-text="
+          delay: 3000;
+          audio: #audio2;
+          title: Tên lửa P-15 U;
+          desc: Được sử dụng trong kháng chiến chống Mỹ\ncứu nước năm 1945, 1967,\nđược biên chế cho Trung tâm BĐKT năm 2008
+        "
+      >
+        <a-troika-text 
+          class="d-title" value="" 
+          color="#FFD700" 
+          fontSize="0.18" 
+          maxWidth="2" 
+          align="center" anchor="center" 
+          position="0 0.25 0"
+          font="https://fonts.gstatic.com/s/roboto/v29/KFOmCnqEu92Fr1Mu4mxM.woff"
+        ></a-troika-text>
+        
+        <a-troika-text 
+          class="d-desc" value="" 
+          color="#FFFFFF" 
+          fontSize="0.09" 
+          maxWidth="2" 
+          align="center" anchor="center" 
+          position="0 0 0"
+          lineHeight="1.5"
+        ></a-troika-text>
+      </a-entity>
+
     </a-entity>
 
     <a-entity mindar-image-target="targetIndex: 2" video-on-target="video: #video1; restart: true">
-      <a-video
-        id="video-plane"
-        src="#video1"
-        width="1.0"
-        height="0.5625"
-        position="0 0 0.001"
-        rotation="0 0 0"
-      ></a-video>
+      <a-video src="#video1" width="1.0" height="0.5625" position="0 0 0.001"></a-video>
     </a-entity>
 
   </a-scene>
@@ -120,9 +135,79 @@
       }catch(e){}
     }
 
-    /* =========================================================
-       TEXT
-       ========================================================= */
+    /* ---------------------------------------------------------
+       COMPONENT: DELAYED TEXT (Xử lý chữ cho Target 1)
+       --------------------------------------------------------- */
+    AFRAME.registerComponent("delayed-text", {
+      schema: {
+        delay: {type: "number", default: 3000},
+        audio: {type: "selector"},
+        title: {type: "string"},
+        desc: {type: "string"}
+      },
+      init() {
+        this.titleEl = this.el.querySelector(".d-title");
+        this.descEl = this.el.querySelector(".d-desc");
+        this.target = this.el.closest("[mindar-image-target]");
+        this.timer = null;
+        this.typingTimer = null;
+
+        this.target.addEventListener("targetFound", () => {
+          // Reset trắng trơn
+          this.titleEl.setAttribute("value", "");
+          this.descEl.setAttribute("value", "");
+          
+          // Chờ delay xong mới bắt đầu chạy chữ
+          this.timer = setTimeout(() => {
+            this.startTyping();
+          }, this.data.delay);
+        });
+
+        this.target.addEventListener("targetLost", () => {
+          if(this.timer) clearTimeout(this.timer);
+          if(this.typingTimer) clearTimeout(this.typingTimer);
+          this.titleEl.setAttribute("value", "");
+          this.descEl.setAttribute("value", "");
+        });
+      },
+      startTyping() {
+        // Phát âm thanh khi chữ bắt đầu hiện
+        playAudio(this.data.audio);
+
+        const title = this.data.title;
+        const desc = this.data.desc;
+        const fullText = title + "||" + desc; // Dùng dấu tách để xử lý logic đơn giản
+
+        // Logic chạy từng chữ (Title chạy xong đến Desc)
+        let i = 0;
+        // Tốc độ chạy chữ: Tiêu đề nhanh, nội dung vừa phải
+        const loop = () => {
+          // Tách biệt tiến độ của Title và Desc
+          let currentTitle = "";
+          let currentDesc = "";
+
+          if (i <= title.length) {
+            currentTitle = title.slice(0, i);
+          } else {
+            currentTitle = title;
+            currentDesc = desc.slice(0, i - title.length);
+          }
+
+          this.titleEl.setAttribute("value", currentTitle);
+          this.descEl.setAttribute("value", currentDesc);
+
+          i++;
+          if (i <= title.length + desc.length) {
+            this.typingTimer = setTimeout(loop, 25); // 25ms mỗi ký tự
+          }
+        };
+        loop();
+      }
+    });
+
+    /* ---------------------------------------------------------
+       CÁC COMPONENT CŨ (Giữ nguyên)
+       --------------------------------------------------------- */
     AFRAME.registerComponent("reveal-typewriter", {
       schema: { text:{type:"string"}, duration:{type:"number",default:3000}, audio:{type:"selector"} },
       init(){
@@ -142,9 +227,7 @@
       restart(){
         this.reset();
         playAudio(this.data.audio);
-        this.el.setAttribute("animation__pop", {
-          property:"scale", to:"1 1 1", dur:400, easing:"easeOutCubic"
-        });
+        this.el.setAttribute("animation__pop", { property:"scale", to:"1 1 1", dur:400, easing:"easeOutCubic" });
         const text = this.data.text || "";
         let i = 0;
         const step = Math.max(15, Math.floor(this.data.duration / Math.max(1, text.length)));
@@ -159,17 +242,11 @@
       }
     });
 
-    /* =========================================================
-       MODEL REVEAL
-       ========================================================= */
     AFRAME.registerComponent("reveal-model", {
       schema: {
         duration:{type:"number",default:3000},
         audio:{type:"selector"},
-        startScale:{type:"vec3"},
-        finalScale:{type:"vec3"},
-        startPos:{type:"vec3"},
-        finalPos:{type:"vec3"}
+        startScale:{type:"vec3"}, finalScale:{type:"vec3"}, startPos:{type:"vec3"}, finalPos:{type:"vec3"}
       },
       init(){
         this.target = this.el.closest("[mindar-image-target]");
@@ -194,35 +271,24 @@
         if(this.running) return;
         this.running = true;
         this._hardReset();
-        playAudio(this.data.audio);
+        // playAudio(this.data.audio); // Nếu bạn muốn tắt tiếng lúc mô hình bay lên thì comment dòng này
+        // Hiện tại vẫn để theo logic cũ (phát khi model lên)
+        playAudio(this.data.audio); 
+
         const fs = this.data.finalScale, fp = this.data.finalPos;
         requestAnimationFrame(()=>requestAnimationFrame(()=>{
-          this.el.setAttribute("animation__scale", {
-            property:"scale", to:`${fs.x} ${fs.y} ${fs.z}`, dur:this.data.duration, easing:"easeOutCubic"
-          });
-          this.el.setAttribute("animation__pos", {
-            property:"position", to:`${fp.x} ${fp.y} ${fp.z}`, dur:this.data.duration, easing:"easeOutCubic"
-          });
+          this.el.setAttribute("animation__scale", { property:"scale", to:`${fs.x} ${fs.y} ${fs.z}`, dur:this.data.duration, easing:"easeOutCubic" });
+          this.el.setAttribute("animation__pos", { property:"position", to:`${fp.x} ${fp.y} ${fp.z}`, dur:this.data.duration, easing:"easeOutCubic" });
         }));
       }
     });
 
-    /* =========================================================
-       SPIN
-       ========================================================= */
     AFRAME.registerComponent("slow-spin", {
       init(){
-        this.el.setAttribute("animation__spin", {
-          property:"rotation", to:"0 0 360", loop:true, dur:14000, easing:"linear"
-        });
+        this.el.setAttribute("animation__spin", { property:"rotation", to:"0 0 360", loop:true, dur:14000, easing:"linear" });
       }
     });
 
-    /* =========================================================
-       TRANSPARENCY FIX:
-       - depthWrite: true -> Giữ khối (không xuyên thấu chính nó)
-       - side: FrontSide -> Chỉ vẽ mặt ngoài
-       ========================================================= */
     AFRAME.registerComponent("transparent-model", {
       schema:{ opacity:{type:"number",default:0.6} },
       init(){
@@ -232,11 +298,7 @@
             if(n.material){
               const mats = Array.isArray(n.material) ? n.material : [n.material];
               mats.forEach(m=>{
-                m.transparent = true;
-                m.opacity = op;
-                m.depthWrite = true;       // Fix: bật depthWrite
-                m.side = THREE.FrontSide;  // Fix: chỉ vẽ mặt trước
-                m.needsUpdate = true;
+                m.transparent = true; m.opacity = op; m.depthWrite = true; m.side = THREE.FrontSide; m.needsUpdate = true;
               });
             }
           });
@@ -244,9 +306,6 @@
       }
     });
 
-    /* =========================================================
-       VIDEO FIX
-       ========================================================= */
     AFRAME.registerComponent("video-on-target", {
       schema: { video: { type: "selector" }, restart: { type: "boolean", default: true } },
       init(){
@@ -266,9 +325,7 @@
       playHard(){
         if(!this.video) return;
         const v = this.video;
-        v.muted = true;
-        v.setAttribute("playsinline", "");
-        v.setAttribute("webkit-playsinline", "");
+        v.muted = true; v.setAttribute("playsinline", ""); v.setAttribute("webkit-playsinline", "");
         if(this.data.restart){ try { v.currentTime = 0; } catch(e){} }
         const tryPlay = ()=>{ try{ v.play().catch(()=>{}); }catch(e){} };
         if(v.readyState < 2){
@@ -281,4 +338,3 @@
   </script>
 </body>
 </html>
-
