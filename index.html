@@ -6,13 +6,11 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
   />
-  <title>MindAR – 3 Targets (Text + 3D + Video) FIX Re-scan</title>
+  <title>MindAR – 3 Targets (Text + Clock Hand 3D + Video)</title>
 
-  <!-- A-Frame + MindAR -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
-  <!-- Troika Text (tiếng Việt có dấu) -->
   <script src="https://unpkg.com/aframe-troika-text/dist/aframe-troika-text.min.js"></script>
 
   <style>
@@ -44,7 +42,6 @@
       <audio id="audio1" src="audio1.mp3" preload="auto"></audio>
       <audio id="audio2" src="audio2.mp3" preload="auto"></audio>
 
-      <!-- Video: muted + playsinline để autoplay trên mobile -->
       <video
         id="video1"
         src="video1.mp4"
@@ -59,9 +56,6 @@
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <!-- =========================
-         TARGET 0 – TEXT
-         ========================= -->
     <a-entity mindar-image-target="targetIndex: 0">
       <a-entity
         position="0 0.2 0"
@@ -81,26 +75,24 @@
       </a-entity>
     </a-entity>
 
-    <!-- =========================
-         TARGET 1 – 3D MODEL
-         ========================= -->
     <a-entity mindar-image-target="targetIndex: 1">
       <a-entity
-        id="model"
-        gltf-model="url(model.glb)"
         reveal-model="duration: 3000; audio: #audio2;
                       startScale: 0.001 0.001 0.001;
                       finalScale: 0.4 0.4 0.4;
                       startPos: 0 0.08 0;
                       finalPos: 0 0.32 0"
         slow-spin
-        transparent-model="opacity: 0.6"
-      ></a-entity>
+      >
+        <a-entity
+          id="model"
+          gltf-model="url(model.glb)"
+          rotation="-90 0 0" 
+          transparent-model="opacity: 0.6"
+        ></a-entity>
+      </a-entity>
     </a-entity>
 
-    <!-- =========================
-         TARGET 2 – VIDEO ON WALL (16:9)
-         ========================= -->
     <a-entity mindar-image-target="targetIndex: 2" video-on-target="video: #video1; restart: true">
       <a-video
         id="video-plane"
@@ -129,7 +121,7 @@
     }
 
     /* =========================================================
-       TEXT: luôn restart mỗi lần targetFound (kể cả khi không bắn targetLost)
+       TEXT: luôn restart mỗi lần targetFound
        ========================================================= */
     AFRAME.registerComponent("reveal-typewriter", {
       schema: { text:{type:"string"}, duration:{type:"number",default:3000}, audio:{type:"selector"} },
@@ -144,26 +136,20 @@
       },
       reset(){
         if(this.timer) { clearTimeout(this.timer); this.timer = null; }
-        // clear values
         this.layers.forEach(l=>l.setAttribute("value",""));
-        // reset scale and remove pop anim
         this.el.removeAttribute("animation__pop");
         this.el.setAttribute("scale","0.001 0.001 0.001");
       },
       restart(){
-        // luôn reset trước rồi mới start để chắc chắn chạy lại
         this.reset();
         playAudio(this.data.audio);
-
         this.el.setAttribute("animation__pop", {
           property:"scale", to:"1 1 1", dur:400, easing:"easeOutCubic"
         });
-
         const text = this.data.text || "";
         const len = Math.max(1, text.length);
         const step = Math.max(15, Math.floor(this.data.duration / len));
         let i = 0;
-
         const loop = ()=>{
           const shown = text.slice(0, i);
           this.layers.forEach(l=>l.setAttribute("value", shown));
@@ -171,7 +157,6 @@
           if(i <= text.length){
             this.timer = setTimeout(loop, step);
           } else {
-            // đảm bảo troika render final
             this.layers.forEach(l=>l.setAttribute("value", text));
           }
         };
@@ -194,7 +179,6 @@
       init(){
         this.target = this.el.closest("[mindar-image-target]");
         this.running = false;
-
         this._hardReset();
         this.target.addEventListener("targetLost", ()=>this._hardReset());
         this.target.addEventListener("targetFound", ()=>this.start());
@@ -203,11 +187,9 @@
         this.running = false;
         this.el.removeAttribute("animation__scale");
         this.el.removeAttribute("animation__pos");
-
         const ss = this.data.startScale, sp = this.data.startPos;
         this.el.setAttribute("scale", `${ss.x} ${ss.y} ${ss.z}`);
         this.el.setAttribute("position", `${sp.x} ${sp.y} ${sp.z}`);
-
         if(this.el.object3D){
           this.el.object3D.scale.set(ss.x, ss.y, ss.z);
           this.el.object3D.position.set(sp.x, sp.y, sp.z);
@@ -216,30 +198,23 @@
       start(){
         if(this.running) return;
         this.running = true;
-
-        // ép nhỏ ngay khi found để lần nào cũng thấy nhỏ->to
         this._hardReset();
         playAudio(this.data.audio);
-
         const fs = this.data.finalScale, fp = this.data.finalPos;
-
         requestAnimationFrame(()=>requestAnimationFrame(()=>{
           this.el.setAttribute("animation__scale", {
-            property:"scale",
-            to:`${fs.x} ${fs.y} ${fs.z}`,
-            dur:this.data.duration,
-            easing:"easeOutCubic"
+            property:"scale", to:`${fs.x} ${fs.y} ${fs.z}`, dur:this.data.duration, easing:"easeOutCubic"
           });
           this.el.setAttribute("animation__pos", {
-            property:"position",
-            to:`${fp.x} ${fp.y} ${fp.z}`,
-            dur:this.data.duration,
-            easing:"easeOutCubic"
+            property:"position", to:`${fp.x} ${fp.y} ${fp.z}`, dur:this.data.duration, easing:"easeOutCubic"
           });
         }));
       }
     });
 
+    /* =========================================================
+       SPIN: Xoay vòng tròn
+       ========================================================= */
     AFRAME.registerComponent("slow-spin", {
       init(){
         this.el.setAttribute("animation__spin", {
@@ -248,6 +223,9 @@
       }
     });
 
+    /* =========================================================
+       TRANSPARENCY: Làm mờ model
+       ========================================================= */
     AFRAME.registerComponent("transparent-model", {
       schema:{ opacity:{type:"number",default:0.6} },
       init(){
@@ -269,72 +247,41 @@
     });
 
     /* =========================================================
-       VIDEO: fix rescan (play lại chắc chắn)
-       - restart=true: mỗi lần found sẽ tua về 0 rồi play
-       - nếu video chưa sẵn: đợi canplay rồi play
-       - lost: pause + reset + load để iOS/texture không bị kẹt
+       VIDEO: fix rescan
        ========================================================= */
     AFRAME.registerComponent("video-on-target", {
-      schema: {
-        video: { type: "selector" },
-        restart: { type: "boolean", default: true }
-      },
+      schema: { video: { type: "selector" }, restart: { type: "boolean", default: true } },
       init(){
         this.target = this.el.closest("[mindar-image-target]");
         this.video = this.data.video;
         if(!this.video) return;
-
-        // chuẩn bị trạng thái ban đầu
         this._stopHard();
-
         this._onFound = ()=>this.playHard();
         this._onLost  = ()=>this._stopHard();
-
         this.target.addEventListener("targetFound", this._onFound);
         this.target.addEventListener("targetLost", this._onLost);
       },
-
       _stopHard(){
         if(!this.video) return;
         try{
           this.video.pause();
-          // reset về đầu để lần sau play lại luôn thấy chạy
           this.video.currentTime = 0;
-          // load lại để tránh kẹt texture trên một số máy
           this.video.load();
         }catch(e){}
       },
-
       playHard(){
         if(!this.video) return;
-
         const v = this.video;
-
-        // luôn đảm bảo muted/inline để autoplay không bị chặn
         v.muted = true;
         v.setAttribute("playsinline", "");
         v.setAttribute("webkit-playsinline", "");
-
-        // tuỳ chọn restart từ đầu mỗi lần quét
-        if(this.data.restart){
-          try { v.currentTime = 0; } catch(e){}
-        }
-
+        if(this.data.restart){ try { v.currentTime = 0; } catch(e){} }
         const tryPlay = ()=>{
-          try{
-            const p = v.play();
-            if(p && p.catch) p.catch(()=>{});
-          }catch(e){}
+          try{ const p = v.play(); if(p && p.catch) p.catch(()=>{}); }catch(e){}
         };
-
-        // nếu chưa đủ dữ liệu để play mượt, đợi canplay
         if(v.readyState < 2){
-          const onCanPlay = ()=>{
-            v.removeEventListener("canplay", onCanPlay);
-            tryPlay();
-          };
+          const onCanPlay = ()=>{ v.removeEventListener("canplay", onCanPlay); tryPlay(); };
           v.addEventListener("canplay", onCanPlay, { once: true });
-          // kích hoạt load
           try { v.load(); } catch(e){}
         } else {
           tryPlay();
@@ -344,5 +291,3 @@
   </script>
 </body>
 </html>
-
-
