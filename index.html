@@ -59,6 +59,12 @@
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
+    <!-- Base lights để model không bị đen (ổn định trên mobile) -->
+    <a-entity id="baseLightAmbient" light="type: ambient; intensity: 0.85; color: #ffffff"></a-entity>
+    <a-entity id="baseLightKey" light="type: directional; intensity: 1.35; color: #ffffff" position="0.6 1.2 1.2"></a-entity>
+    <a-entity id="baseLightRim" light="type: directional; intensity: 0.75; color: #b7d7ff" position="-0.8 0.9 -1.0"></a-entity>
+
+
     <!-- =========================
          TARGET 0 – TEXT
          ========================= -->
@@ -97,7 +103,7 @@
 
       <!-- Spotlight quét (ánh sáng chiếu) -->
       <a-entity id="spotFx"
-        light="type:spot; intensity:0; angle:35; penumbra:0.6; distance:2; decay:2; color:#ffffff"
+        light="type:spot; intensity:0; angle:32; penumbra:0.75; distance:6; decay:1; color:#ffffff"
         position="0 0.25 0.6"
         rotation="-20 0 0"
       ></a-entity>
@@ -561,5 +567,4 @@
   </script>
 </body>
 </html>
-
 
