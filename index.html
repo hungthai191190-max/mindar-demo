@@ -6,7 +6,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
   />
-  <title>MindAR – 3 Targets (Text + Clock Hand 3D + Video)</title>
+  <title>MindAR – 3 Targets (Text + 3D Clock Hand + Video)</title>
 
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
@@ -87,7 +87,7 @@
         <a-entity
           id="model"
           gltf-model="url(model.glb)"
-          rotation="90 0 0" 
+          rotation="-90 0 0" 
           transparent-model="opacity: 0.6"
         ></a-entity>
       </a-entity>
@@ -121,7 +121,7 @@
     }
 
     /* =========================================================
-       TEXT: luôn restart mỗi lần targetFound
+       TEXT
        ========================================================= */
     AFRAME.registerComponent("reveal-typewriter", {
       schema: { text:{type:"string"}, duration:{type:"number",default:3000}, audio:{type:"selector"} },
@@ -129,7 +129,6 @@
         this.layers = this.el.querySelectorAll(".tw");
         this.target = this.el.closest("[mindar-image-target]");
         this.timer = null;
-
         this.target.addEventListener("targetFound", ()=>this.restart());
         this.target.addEventListener("targetLost", ()=>this.reset());
         this.reset();
@@ -147,25 +146,21 @@
           property:"scale", to:"1 1 1", dur:400, easing:"easeOutCubic"
         });
         const text = this.data.text || "";
-        const len = Math.max(1, text.length);
-        const step = Math.max(15, Math.floor(this.data.duration / len));
         let i = 0;
+        const step = Math.max(15, Math.floor(this.data.duration / Math.max(1, text.length)));
         const loop = ()=>{
           const shown = text.slice(0, i);
           this.layers.forEach(l=>l.setAttribute("value", shown));
           i++;
-          if(i <= text.length){
-            this.timer = setTimeout(loop, step);
-          } else {
-            this.layers.forEach(l=>l.setAttribute("value", text));
-          }
+          if(i <= text.length) this.timer = setTimeout(loop, step);
+          else this.layers.forEach(l=>l.setAttribute("value", text));
         };
         loop();
       }
     });
 
     /* =========================================================
-       MODEL: luôn small->big mỗi lần targetFound
+       MODEL REVEAL
        ========================================================= */
     AFRAME.registerComponent("reveal-model", {
       schema: {
@@ -213,7 +208,7 @@
     });
 
     /* =========================================================
-       SPIN: Xoay vòng tròn
+       SPIN
        ========================================================= */
     AFRAME.registerComponent("slow-spin", {
       init(){
@@ -224,9 +219,11 @@
     });
 
     /* =========================================================
-       TRANSPARENCY: Làm mờ model
+       TRANSPARENCY FIX:
+       - depthWrite: true -> Giữ khối (không xuyên thấu chính nó)
+       - side: FrontSide -> Chỉ vẽ mặt ngoài
        ========================================================= */
-AFRAME.registerComponent("transparent-model", {
+    AFRAME.registerComponent("transparent-model", {
       schema:{ opacity:{type:"number",default:0.6} },
       init(){
         this.el.addEventListener("model-loaded", ()=>{
@@ -235,17 +232,10 @@ AFRAME.registerComponent("transparent-model", {
             if(n.material){
               const mats = Array.isArray(n.material) ? n.material : [n.material];
               mats.forEach(m=>{
-                // Bật trong suốt
                 m.transparent = true;
                 m.opacity = op;
-                
-                // QUAN TRỌNG: Bật depthWrite để mặt trước che mặt sau
-                m.depthWrite = true; 
-                
-                // Chỉ vẽ mặt trước (FrontSide) để tránh lộ mặt trong
-                // (Nếu model bị mất mặt nào đó thì đổi thành THREE.DoubleSide)
-                m.side = THREE.FrontSide; 
-                
+                m.depthWrite = true;       // Fix: bật depthWrite
+                m.side = THREE.FrontSide;  // Fix: chỉ vẽ mặt trước
                 m.needsUpdate = true;
               });
             }
@@ -255,7 +245,7 @@ AFRAME.registerComponent("transparent-model", {
     });
 
     /* =========================================================
-       VIDEO: fix rescan
+       VIDEO FIX
        ========================================================= */
     AFRAME.registerComponent("video-on-target", {
       schema: { video: { type: "selector" }, restart: { type: "boolean", default: true } },
@@ -271,11 +261,7 @@ AFRAME.registerComponent("transparent-model", {
       },
       _stopHard(){
         if(!this.video) return;
-        try{
-          this.video.pause();
-          this.video.currentTime = 0;
-          this.video.load();
-        }catch(e){}
+        try{ this.video.pause(); this.video.currentTime = 0; this.video.load(); }catch(e){}
       },
       playHard(){
         if(!this.video) return;
@@ -284,20 +270,14 @@ AFRAME.registerComponent("transparent-model", {
         v.setAttribute("playsinline", "");
         v.setAttribute("webkit-playsinline", "");
         if(this.data.restart){ try { v.currentTime = 0; } catch(e){} }
-        const tryPlay = ()=>{
-          try{ const p = v.play(); if(p && p.catch) p.catch(()=>{}); }catch(e){}
-        };
+        const tryPlay = ()=>{ try{ v.play().catch(()=>{}); }catch(e){} };
         if(v.readyState < 2){
           const onCanPlay = ()=>{ v.removeEventListener("canplay", onCanPlay); tryPlay(); };
           v.addEventListener("canplay", onCanPlay, { once: true });
           try { v.load(); } catch(e){}
-        } else {
-          tryPlay();
-        }
+        } else { tryPlay(); }
       }
     });
   </script>
 </body>
 </html>
-
-
