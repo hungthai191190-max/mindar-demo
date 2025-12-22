@@ -6,7 +6,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
   />
-  <title>MindAR – Target 1 Resized & Re-positioned</title>
+  <title>MindAR – Text Always Face Camera</title>
 
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
@@ -94,8 +94,8 @@
           fontSize="0.09" 
           maxWidth="2" 
           align="center" anchor="center" 
-          rotation="90 0 0"
           position="0 0.85 0.15"
+          look-at-camera
           font="https://fonts.gstatic.com/s/roboto/v29/KFOmCnqEu92Fr1Mu4mxM.woff"
         ></a-troika-text>
         
@@ -105,8 +105,8 @@
           fontSize="0.018" 
           maxWidth="1.5" 
           align="left" anchor="center" 
-          rotation="90 0 0"
           position="0.5 0.32 0.15"
+          look-at-camera
           lineHeight="1.5"
         ></a-troika-text>
       </a-entity>
@@ -133,7 +133,22 @@
       }catch(e){}
     }
 
-    // --- COMPONENT DELAYED TEXT ---
+    /* ---------------------------------------------------------
+       MỚI: LOOK AT CAMERA (Giúp vật thể luôn xoay mặt về người dùng)
+       --------------------------------------------------------- */
+    AFRAME.registerComponent('look-at-camera', {
+      tick: function () {
+        // Lấy camera trong scene
+        var camera = this.el.sceneEl.camera;
+        if (!camera) return;
+        // Bắt object nhìn vào vị trí của camera
+        this.el.object3D.lookAt(camera.el.object3D.position);
+      }
+    });
+
+    /* ---------------------------------------------------------
+       DELAYED TEXT
+       --------------------------------------------------------- */
     AFRAME.registerComponent("delayed-text", {
       schema: {
         delay: {type: "number", default: 3000},
@@ -186,7 +201,9 @@
       }
     });
 
-    // --- CÁC COMPONENT CŨ ---
+    /* ---------------------------------------------------------
+       CÁC COMPONENT CŨ
+       --------------------------------------------------------- */
     AFRAME.registerComponent("reveal-typewriter", {
       schema: { text:{type:"string"}, duration:{type:"number",default:3000}, audio:{type:"selector"} },
       init(){
