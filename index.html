@@ -93,8 +93,7 @@
                       startScale: 0.001 0.001 0.001;
                       finalScale: 0.4 0.4 0.4;
                       startPos:  0 0 0.02;
-                      finalPos:  0 0 0.28"
-        slow-spin
+                      finalPos:  0 0 0.28" upright-spin="speed: 26"
         transparent-model="opacity: 0.6"
       ></a-entity>
     </a-entity>
@@ -340,6 +339,21 @@
         } else {
           tryPlay();
         }
+      }
+    });
+
+    /* =========================================================
+       UPRIGHT SPIN:
+       - Quay quanh trục đứng (trục Y local) mà KHÔNG phá rotation X/Z nền
+       - Dùng tick để tránh animation 'rotation: 0 360 0' làm mất góc -90
+       ========================================================= */
+    AFRAME.registerComponent("upright-spin", {
+      schema: { speed: { type: "number", default: 26 } }, // deg/sec
+      tick: function (t, dt) {
+        if (!dt) return;
+        const obj = this.el.object3D;
+        if (!obj) return;
+        obj.rotation.y += (this.data.speed * Math.PI / 180) * (dt / 1000);
       }
     });
   </script>
