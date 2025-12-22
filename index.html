@@ -226,7 +226,7 @@
     /* =========================================================
        TRANSPARENCY: Làm mờ model
        ========================================================= */
-    AFRAME.registerComponent("transparent-model", {
+AFRAME.registerComponent("transparent-model", {
       schema:{ opacity:{type:"number",default:0.6} },
       init(){
         this.el.addEventListener("model-loaded", ()=>{
@@ -235,9 +235,17 @@
             if(n.material){
               const mats = Array.isArray(n.material) ? n.material : [n.material];
               mats.forEach(m=>{
+                // Bật trong suốt
                 m.transparent = true;
                 m.opacity = op;
-                m.depthWrite = false;
+                
+                // QUAN TRỌNG: Bật depthWrite để mặt trước che mặt sau
+                m.depthWrite = true; 
+                
+                // Chỉ vẽ mặt trước (FrontSide) để tránh lộ mặt trong
+                // (Nếu model bị mất mặt nào đó thì đổi thành THREE.DoubleSide)
+                m.side = THREE.FrontSide; 
+                
                 m.needsUpdate = true;
               });
             }
@@ -291,4 +299,5 @@
   </script>
 </body>
 </html>
+
 
