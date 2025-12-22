@@ -88,6 +88,7 @@
       <a-entity
         id="model"
         gltf-model="url(model.glb)"
+	  rotation="90 0 0"
         reveal-model="duration: 3000; audio: #audio2;
                       startScale: 0.001 0.001 0.001;
                       finalScale: 0.4 0.4 0.4;
@@ -243,7 +244,7 @@
     AFRAME.registerComponent("slow-spin", {
       init(){
         this.el.setAttribute("animation__spin", {
-          property:"rotation", to:"360 0 0", loop:true, dur:14000, easing:"linear"
+          property:"rotation", to:"0 0 360", loop:true, dur:14000, easing:"linear"
         });
       }
     });
@@ -344,6 +345,5 @@
   </script>
 </body>
 </html>
-
 
 
