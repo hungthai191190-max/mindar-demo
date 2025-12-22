@@ -85,17 +85,31 @@
          TARGET 1 – 3D MODEL
          ========================= -->
     <a-entity mindar-image-target="targetIndex: 1">
+      
+      <!-- Vòng sáng quét quanh ảnh (ring) -->
+      <a-ring id="ringFx"
+        radius-inner="0.38"
+        radius-outer="0.42"
+        rotation="-90 0 0"
+        position="0 0 0.002"
+        material="color:#00E5FF; shader:flat; transparent:true; opacity:0;"
+      ></a-ring>
+
+      <!-- Spotlight quét (ánh sáng chiếu) -->
+      <a-entity id="spotFx"
+        light="type:spot; intensity:0; angle:35; penumbra:0.6; distance:2; decay:2; color:#ffffff"
+        position="0 0.25 0.6"
+        rotation="-20 0 0"
+      ></a-entity>
+
       <a-entity
         id="model"
         gltf-model="url(model.glb)"
-        reveal-model="duration: 3000; audio: #audio2;
-                      startScale: 0.001 0.001 0.001;
-                      finalScale: 0.4 0.4 0.4;
-                      startPos: 0 0.08 0;
-                      finalPos: 0 0.32 0"
-        slow-spin
-        transparent-model="opacity: 0.6"
-      ></a-entity>
+        cinematic-reveal="duration: 2600; rise: 0.32; spinDelay: 900; ring: #ringFx; spot: #spotFx; audio: #audio2;
+                          startScale: 0.001 0.001 0.001; finalScale: 0.42 0.42 0.42;
+                          startPos: 0 0.08 0; finalPos: 0 0.32 0"
+        transparent-model="opacity: 0.95"
+      ></a-entity></a-entity>
     </a-entity>
 
     <!-- =========================
@@ -341,7 +355,211 @@
         }
       }
     });
+
+    /* =========================================================
+       CINEMATIC MODEL REVEAL:
+       - Ban đầu: ẩn (scale nhỏ)
+       - Ánh sáng quét quanh ảnh (ring + spotlight orbit)
+       - Model trồi lên + pop overshoot
+       - Lên cao 1 đoạn thì bắt đầu xoay tròn chậm (spinDelay)
+       ========================================================= */
+    AFRAME.registerComponent("cinematic-reveal", {
+      schema: {
+        duration: { type: "number", default: 2600 },
+        rise: { type: "number", default: 0.32 },
+        spinDelay: { type: "number", default: 900 },
+        ring: { type: "selector" },
+        spot: { type: "selector" },
+        audio: { type: "selector" },
+
+        // giữ tương thích với cấu hình cũ
+        startScale: { type: "vec3", default: { x: 0.001, y: 0.001, z: 0.001 } },
+        finalScale: { type: "vec3", default: { x: 0.42, y: 0.42, z: 0.42 } },
+        startPos: { type: "vec3", default: { x: 0, y: 0.08, z: 0 } },
+        finalPos: { type: "vec3", default: { x: 0, y: 0.32, z: 0 } }
+      },
+
+      init() {
+        this.target = this.el.closest("[mindar-image-target]");
+        this.running = false;
+
+        this._resetHard();
+
+        this._onFound = () => this.start();
+        this._onLost  = () => this._resetHard();
+
+        this.target.addEventListener("targetFound", this._onFound);
+        this.target.addEventListener("targetLost", this._onLost);
+      },
+
+      _resetHard() {
+        this.running = false;
+
+        // MODEL reset
+        this.el.removeAttribute("animation__scale");
+        this.el.removeAttribute("animation__pos");
+        this.el.removeAttribute("animation__rot");
+        this.el.removeAttribute("animation__rot_settle");
+        this.el.removeAttribute("animation__spin");
+
+        const ss = this.data.startScale;
+        const sp = this.data.startPos;
+
+        this.el.setAttribute("scale", `${ss.x} ${ss.y} ${ss.z}`);
+        this.el.setAttribute("position", `${sp.x} ${sp.y} ${sp.z}`);
+        this.el.setAttribute("rotation", `0 0 0`);
+
+        if (this.el.object3D) {
+          this.el.object3D.scale.set(ss.x, ss.y, ss.z);
+          this.el.object3D.position.set(sp.x, sp.y, sp.z);
+          this.el.object3D.rotation.set(0, 0, 0);
+        }
+
+        // RING reset
+        const ring = this.data.ring;
+        if (ring) {
+          ring.removeAttribute("animation__ringIn");
+          ring.removeAttribute("animation__ringSpin");
+          ring.removeAttribute("animation__ringDim");
+          ring.setAttribute("material", "opacity:0;");
+          ring.setAttribute("rotation", "-90 0 0");
+        }
+
+        // SPOT reset
+        const spot = this.data.spot;
+        if (spot) {
+          spot.removeAttribute("animation__spotIn");
+          spot.removeAttribute("animation__spotOrbit");
+          spot.removeAttribute("animation__spotDim");
+          spot.setAttribute("light", "intensity:0;");
+          spot.setAttribute("position", "0 0.25 0.6");
+          spot.setAttribute("rotation", "-20 0 0");
+        }
+      },
+
+      start() {
+        if (this.running) return;
+        this.running = true;
+
+        // luôn reset trước khi start để chắc chắn chạy lại khi rescan
+        this._resetHard();
+
+        // audio
+        playAudio(this.data.audio);
+
+        const ring = this.data.ring;
+        const spot = this.data.spot;
+
+        // 1) RING: bật + quay quét
+        if (ring) {
+          ring.setAttribute("animation__ringIn", {
+            property: "material.opacity",
+            to: 0.75,
+            dur: 280,
+            easing: "easeOutCubic"
+          });
+          ring.setAttribute("animation__ringSpin", {
+            property: "rotation",
+            to: "-90 360 0",
+            dur: 900,
+            loop: true,
+            easing: "linear"
+          });
+        }
+
+        // 2) SPOT: bật + orbit
+        if (spot) {
+          spot.setAttribute("animation__spotIn", {
+            property: "light.intensity",
+            to: 1.2,
+            dur: 250,
+            easing: "easeOutCubic"
+          });
+          spot.setAttribute("animation__spotOrbit", {
+            property: "rotation",
+            to: "-20 360 0",
+            dur: 1200,
+            loop: true,
+            easing: "linear"
+          });
+        }
+
+        // 3) MODEL: trồi lên + pop overshoot + tilt settle
+        const dur = this.data.duration;
+        const fs = this.data.finalScale;
+        const fp = this.data.finalPos;
+
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          // pop scale
+          this.el.setAttribute("animation__scale", {
+            property: "scale",
+            to: `${fs.x} ${fs.y} ${fs.z}`,
+            dur: Math.floor(dur * 0.65),
+            easing: "easeOutBack"
+          });
+
+          // rise position
+          this.el.setAttribute("animation__pos", {
+            property: "position",
+            to: `${fp.x} ${fp.y} ${fp.z}`,
+            dur: dur,
+            easing: "easeOutCubic"
+          });
+
+          // tilt nhẹ
+          this.el.setAttribute("animation__rot", {
+            property: "rotation",
+            to: "8 0 0",
+            dur: 260,
+            easing: "easeOutCubic"
+          });
+
+          // settle tilt về 0
+          setTimeout(() => {
+            if (!this.running) return;
+            this.el.setAttribute("animation__rot_settle", {
+              property: "rotation",
+              to: "0 0 0",
+              dur: 520,
+              easing: "easeOutCubic"
+            });
+          }, 280);
+
+          // 4) spin chậm sau khi đã lên cao 1 đoạn
+          setTimeout(() => {
+            if (!this.running) return;
+
+            this.el.setAttribute("animation__spin", {
+              property: "rotation",
+              to: "0 360 0",
+              loop: true,
+              dur: 14000,
+              easing: "linear"
+            });
+
+            // Dim ring/spot để chuyển sang trạng thái trưng bày
+            if (ring) {
+              ring.setAttribute("animation__ringDim", {
+                property: "material.opacity",
+                to: 0.25,
+                dur: 450,
+                easing: "easeOutCubic"
+              });
+            }
+            if (spot) {
+              spot.setAttribute("animation__spotDim", {
+                property: "light.intensity",
+                to: 0.7,
+                dur: 450,
+                easing: "easeOutCubic"
+              });
+            }
+          }, this.data.spinDelay);
+        }));
+      }
+    });
   </script>
 </body>
 </html>
+
 
