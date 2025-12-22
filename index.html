@@ -82,68 +82,20 @@
     </a-entity>
 
     <!-- =========================
-         TARGET 1 – 3D MODEL (GROUND)
-         - Ảnh đặt nằm ngang (mặt đất)
-         - Model nằm trên ảnh (nhô theo +Z của ground space)
-         - Vẫn quay quanh trục THẲNG ĐỨNG ngoài đời (quay quanh Z trong ground space)
+         TARGET 1 – 3D MODEL
          ========================= -->
     <a-entity mindar-image-target="targetIndex: 1">
-
-      <!-- Ground anchor: chuyển mặt phẳng target thành mặt đất -->
-      <a-entity id="groundAnchor" rotation="-90 0 0" ground-trigger="ring:#ringDisc; outline:#ringOutline; beam:#beamFx; beamInner:#beamFxInner; model:#model; audio:#audio2;
-                        duration: 2400;
-                        startScale: 0.001 0.001 0.001; finalScale: 0.4 0.4 0.4;
-                        startPos: 0 0 0.02; finalPos: 0 0 0.26">
-
-        <!-- Vòng tròn nằm PHẲNG trên ảnh -->
-        <a-circle id="ringDisc"
-          radius="0.42"
-          position="0 0 0.002"
-          rotation="-90 0 0"
-          material="transparent:true; opacity:0; side:double"
-          magic-ring="baseHue: 190; hueSpan: 120; glow: 1; thickness: 0.18"
-        ></a-circle>
-
-        <a-ring id="ringOutline"
-          radius-inner="0.40"
-          radius-outer="0.42"
-          position="0 0 0.003"
-          rotation="-90 0 0"
-          material="color:#7ff6ff; shader:flat; transparent:true; opacity:0; side:double"
-        ></a-ring>
-
-        <!-- Cột sáng hướng LÊN (theo +Z của ground space) -->
-        <a-entity id="beamFx"
-          geometry="primitive: cone; radiusBottom: 0.03; radiusTop: 0.26; height: 0.62; segmentsRadial: 36"
-          position="0 0 0.30"
-          rotation="90 0 0"
-          material="color:#00E5FF; transparent:true; opacity:0; side:double; blending:additive; depthWrite:false"
-          cone-glow="min:0.10; max:0.22; speed:1.15"
-        ></a-entity>
-
-        <a-entity id="beamFxInner"
-          geometry="primitive: cone; radiusBottom: 0.02; radiusTop: 0.18; height: 0.55; segmentsRadial: 28"
-          position="0 0 0.27"
-          rotation="90 0 0"
-          material="color:#ffffff; transparent:true; opacity:0; side:double; blending:additive; depthWrite:false"
-          cone-glow="min:0.06; max:0.14; speed:1.35"
-        ></a-entity>
-
-        <!-- Wrapper quay quanh trục thẳng đứng ngoài đời (Z trong ground space) -->
-        <a-entity id="spinWrap" slow-spin-ground>
-          <a-entity
-            id="model"
-            gltf-model="url(model.glb)"
-            reveal-model="duration: 2400; audio: #audio2;
-                          startScale: 0.001 0.001 0.001;
-                          finalScale: 0.4 0.4 0.4;
-                          startPos: 0 0 0.02;
-                          finalPos: 0 0 0.26"
-            transparent-model="opacity: 0.85"
-          ></a-entity>
-        </a-entity>
-
-      </a-entity>
+      <a-entity
+        id="model"
+        gltf-model="url(model.glb)"
+        reveal-model="duration: 3000; audio: #audio2;
+                      startScale: 0.001 0.001 0.001;
+                      finalScale: 0.4 0.4 0.4;
+                      startPos: 0 0.08 0;
+                      finalPos: 0 0.32 0"
+        slow-spin
+        transparent-model="opacity: 0.6"
+      ></a-entity>
     </a-entity>
 
     <!-- =========================
@@ -291,7 +243,7 @@
     AFRAME.registerComponent("slow-spin", {
       init(){
         this.el.setAttribute("animation__spin", {
-          property:"rotation", to:"0 360 0", loop:true, dur:14000, easing:"linear"
+          property:"rotation", to:"0 0 360", loop:true, dur:14000, easing:"linear"
         });
       }
     });
@@ -315,193 +267,6 @@
         });
       }
     });
-
-    
-
-    /* =========================================================
-       GROUND SPIN: quay quanh trục THẲNG ĐỨNG ngoài đời khi target nằm ngang
-       - Sau groundAnchor rotation="-90 0 0", trục "up" tương ứng Z
-       ========================================================= */
-    AFRAME.registerComponent("slow-spin-ground", {
-      init(){
-        this.el.setAttribute("animation__spin", {
-          property:"rotation",
-          to:"0 0 360",
-          loop:true,
-          dur:14000,
-          easing:"linear"
-        });
-      }
-    });
-
-    /* =========================================================
-       MAGIC RING (canvas texture):
-       - Vòng tròn có "điểm sáng" chạy + gradient đổi màu
-       ========================================================= */
-    AFRAME.registerComponent("magic-ring", {
-      schema: {
-        baseHue:   { type: "number", default: 190 },
-        hueSpan:   { type: "number", default: 120 },
-        thickness: { type: "number", default: 0.18 },
-        glow:      { type: "number", default: 1 }
-      },
-      init() {
-        const size = 512;
-        this.canvas = document.createElement("canvas");
-        this.canvas.width = size;
-        this.canvas.height = size;
-        this.ctx = this.canvas.getContext("2d");
-
-        this.el.setAttribute("material", { src: this.canvas, transparent: true, opacity: 0 });
-
-        this.phase = 0;
-        this._draw();
-      },
-      tick(t){
-        // tăng phase đều theo thời gian để "điểm sáng" chạy
-        const rad = (t/1000) * (26 * Math.PI/180); // ~26 độ/giây
-        this.phase = rad;
-        this._draw();
-
-        // đảm bảo texture update
-        const mat = this.el.getObject3D("mesh")?.material;
-        if(mat && mat.map) mat.map.needsUpdate = true;
-      },
-      _draw() {
-        const ctx = this.ctx;
-        const w = this.canvas.width, h = this.canvas.height;
-        ctx.clearRect(0, 0, w, h);
-
-        const cx = w/2, cy = h/2;
-        const rOuter = Math.min(w, h) * 0.46;
-        const rInner = rOuter * (1 - Math.max(0.08, Math.min(0.45, this.data.thickness)));
-
-        const segments = 96;
-        for (let i=0;i<segments;i++){
-          const t0 = (i/segments)*Math.PI*2;
-          const t1 = ((i+1)/segments)*Math.PI*2;
-
-          const hue = (this.data.baseHue + this.data.hueSpan * Math.sin(t0 + this.phase)) % 360;
-          const alpha = 0.35 + 0.25 * (0.5 + 0.5*Math.sin(t0*3 + this.phase*2));
-          ctx.strokeStyle = `hsla(${hue}, 95%, 60%, ${alpha})`;
-          ctx.lineWidth = rOuter - rInner;
-          ctx.beginPath();
-          ctx.arc(cx, cy, (rOuter + rInner)/2, t0, t1);
-          ctx.stroke();
-        }
-
-        const head = this.phase % (Math.PI*2);
-        const wedge = 0.35;
-        const grad = ctx.createRadialGradient(cx, cy, rInner*0.7, cx, cy, rOuter*1.02);
-        grad.addColorStop(0.0, "rgba(255,255,255,0.0)");
-        grad.addColorStop(0.75, "rgba(255,255,255,0.18)");
-        grad.addColorStop(1.0, "rgba(255,255,255,0.0)");
-
-        ctx.save();
-        ctx.globalCompositeOperation = "lighter";
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.arc(cx, cy, rOuter*1.02, head-wedge, head+wedge);
-        ctx.closePath();
-        ctx.fill();
-        ctx.restore();
-
-        if (this.data.glow > 0){
-          ctx.save();
-          ctx.globalCompositeOperation = "lighter";
-          ctx.strokeStyle = "rgba(0,229,255,0.18)";
-          ctx.lineWidth = 10;
-          ctx.beginPath();
-          ctx.arc(cx, cy, rOuter*0.98, 0, Math.PI*2);
-          ctx.stroke();
-          ctx.restore();
-        }
-      }
-    });
-
-    /* =========================================================
-       CONE GLOW: pulse opacity + breathing scale
-       ========================================================= */
-    AFRAME.registerComponent("cone-glow", {
-      schema: { min:{type:"number",default:0.10}, max:{type:"number",default:0.22}, speed:{type:"number",default:1.15} },
-      init(){
-        this._baseScale = this.el.getAttribute("scale") || {x:1,y:1,z:1};
-      },
-      tick(t){
-        const s = (t/1000)*this.data.speed*2*Math.PI;
-        const a = this.data.min + (this.data.max - this.data.min) * (0.5 + 0.5*Math.sin(s));
-        this.el.setAttribute("material", "opacity", a);
-
-        const k = 1 + 0.04*(0.5 + 0.5*Math.sin(s*0.6));
-        this.el.setAttribute("scale", `${this._baseScale.x*k} ${this._baseScale.y*k} ${this._baseScale.z*k}`);
-      }
-    });
-
-    /* =========================================================
-       GROUND TRIGGER:
-       - found: hiện ring/beam + model trồi lên (reveal-model lo scale/pos + audio)
-       - lost: ẩn ring/beam (model reset do reveal-model đã có targetLost)
-       ========================================================= */
-    AFRAME.registerComponent("ground-trigger", {
-      schema: {
-        ring: { type: "selector" },
-        outline: { type: "selector" },
-        beam: { type: "selector" },
-        beamInner: { type: "selector" },
-        model: { type: "selector" },
-        audio: { type: "selector" },
-        duration: { type: "number", default: 2400 },
-        startScale: { type: "vec3" },
-        finalScale: { type: "vec3" },
-        startPos: { type: "vec3" },
-        finalPos: { type: "vec3" }
-      },
-      init(){
-        this.target = this.el.closest("[mindar-image-target]");
-        this._resetFx();
-
-        this.target.addEventListener("targetFound", ()=>this._showFx());
-        this.target.addEventListener("targetLost", ()=>this._resetFx());
-      },
-      _resetFx(){
-        if(this.data.ring){
-          this.data.ring.removeAttribute("animation__in");
-          this.data.ring.setAttribute("material","opacity",0);
-        }
-        if(this.data.outline){
-          this.data.outline.removeAttribute("animation__in");
-          this.data.outline.setAttribute("material","opacity",0);
-        }
-        if(this.data.beam){
-          this.data.beam.setAttribute("material","opacity",0);
-        }
-        if(this.data.beamInner){
-          this.data.beamInner.setAttribute("material","opacity",0);
-        }
-      },
-      _showFx(){
-        // ring hiện
-        if(this.data.ring){
-          this.data.ring.setAttribute("animation__in", {
-            property:"material.opacity", to:0.95, dur:220, easing:"easeOutCubic"
-          });
-        }
-        if(this.data.outline){
-          this.data.outline.setAttribute("animation__in", {
-            property:"material.opacity", to:0.65, dur:220, easing:"easeOutCubic"
-          });
-        }
-        // beam bật nền (cone-glow sẽ "thở" tiếp)
-        if(this.data.beam){
-          this.data.beam.setAttribute("material","opacity",0.14);
-        }
-        if(this.data.beamInner){
-          this.data.beamInner.setAttribute("material","opacity",0.10);
-        }
-      }
-    });
-
 
     /* =========================================================
        VIDEO: fix rescan (play lại chắc chắn)
