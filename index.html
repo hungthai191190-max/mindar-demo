@@ -87,7 +87,18 @@
   </div>
 
   <a-scene
-    mindar-image="imageTargetSrc: ./targets.mind; filterMinCF:0.0001; filterBeta:0.001;"
+    mindar-image="
+      imageTargetSrc: ./targets.mind; 
+      filterMinCF: 0.0001; 
+      filterBeta: 0.001; 
+      uiScanning: #scanning-overlay;
+      /* Ép độ phân giải lên HD/Full HD */
+      videoConstraint: {
+        facingMode: 'environment',
+        width: { ideal: 1920 },
+        height: { ideal: 1080 }
+      }
+    "
     renderer="colorManagement: true, physicallyCorrectLights"
     color-space="sRGB"
     vr-mode-ui="enabled: false"
@@ -314,3 +325,4 @@
   </script>
 </body>
 </html>
+
