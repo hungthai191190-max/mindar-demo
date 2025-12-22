@@ -6,7 +6,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
   />
-  <title>MindAR – Auto Wrap Text UI</title>
+  <title>MindAR – Fix Space Text</title>
 
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
@@ -27,13 +27,13 @@
     }
     .hidden { display: none !important; opacity: 0; pointer-events: none; }
 
-    /* --- GIAO DIỆN UI (Đã nâng cấp Auto-Wrap) --- */
+    /* --- UI PANEL --- */
     #info-panel {
       position: fixed;
-      bottom: 20px; left: 15px; right: 15px; /* Cố định 2 bên lề để ép chữ xuống dòng */
+      bottom: 20px; left: 15px; right: 15px;
       z-index: 100;
       
-      background: rgba(10, 10, 10, 0.75); /* Màu nền tối hơn chút để dễ đọc */
+      background: rgba(10, 10, 10, 0.8); /* Màu nền đậm hơn chút */
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
       
@@ -42,10 +42,11 @@
       border-radius: 8px;
       color: #fff;
       
-      /* QUAN TRỌNG: Xử lý văn bản dài */
-      max-height: 40%;       /* Không cho bảng cao quá 40% màn hình */
-      overflow-y: auto;      /* Nếu dài quá thì hiện thanh cuộn */
-      word-wrap: break-word; /* Tự động xuống dòng nếu từ quá dài */
+      /* Cấu hình hiển thị chữ */
+      max-height: 40%;
+      overflow-y: auto;
+      word-wrap: break-word; /* Tự động xuống dòng */
+      white-space: pre-wrap; /* QUAN TRỌNG: Giữ nguyên dấu cách và xuống dòng */
       
       opacity: 0;
       transform: translateY(30px);
@@ -69,10 +70,10 @@
 
     #ui-desc {
       margin: 0;
-      font-size: 14px;
-      line-height: 1.6;     /* Dãn dòng ra cho dễ đọc */
+      font-size: 15px; /* Chữ to hơn xíu cho dễ đọc */
+      line-height: 1.6;
       color: #e0e0e0;
-      text-align: justify;  /* Căn đều 2 bên cho đẹp mắt */
+      text-align: left; /* Canh trái chuẩn để không bị lỗi giãn chữ */
     }
   </style>
 </head>
@@ -121,12 +122,9 @@
       </a-entity>
 
       <a-entity 
-        html-overlay-controller="
-          delay: 3000;
-          audio: #audio2;
-          title: TÊN LỬA P-15 U;
-          desc: Đây là đoạn văn bản mẫu rất dài để kiểm tra tính năng tự động xuống dòng. Được sử dụng trong kháng chiến chống Mỹ cứu nước năm 1945, 1967. Được biên chế cho Trung tâm BĐKT năm 2008. Với công nghệ CSS mới, dù bạn có viết dài đến mấy thì nó vẫn nằm gọn trong khung hình, không bị tràn ra ngoài.
-        "
+        html-overlay-controller="delay: 3000; audio: #audio2"
+        data-title="TÊN LỬA P-15 U"
+        data-desc="Được sử dụng trong kháng chiến chống Mỹ cứu nước năm 1945, 1967. Được biên chế cho Trung tâm BĐKT năm 2008. Đây là đoạn văn bản dài có dấu cách đầy đủ để bạn kiểm tra."
       ></a-entity>
 
     </a-entity>
@@ -150,18 +148,25 @@
       }catch(e){}
     }
 
-    /* HTML OVERLAY CONTROLLER */
+    /* =========================================================
+       HTML OVERLAY CONTROLLER (UPDATED)
+       - Đọc dữ liệu từ data-title/data-desc thay vì schema
+       ========================================================= */
     AFRAME.registerComponent("html-overlay-controller", {
       schema: {
         delay: {type: "number", default: 3000},
-        audio: {type: "selector"},
-        title: {type: "string"},
-        desc: {type: "string"}
+        audio: {type: "selector"}
+        // Không khai báo title/desc ở đây nữa để tránh parser làm lỗi font
       },
       init() {
         this.uiPanel = document.getElementById("info-panel");
         this.uiTitle = document.getElementById("ui-title");
         this.uiDesc = document.getElementById("ui-desc");
+        
+        // Lấy text trực tiếp từ attribute HTML (an toàn nhất)
+        this.fullTitle = this.el.getAttribute("data-title") || "";
+        this.fullDesc = this.el.getAttribute("data-desc") || "";
+
         this.target = this.el.closest("[mindar-image-target]");
         this.startTimer = null;
         this.typingTimer = null;
@@ -171,8 +176,10 @@
       },
       
       onFound() {
-        this.uiTitle.innerText = "";
-        this.uiDesc.innerText = "";
+        // Xóa nội dung cũ
+        this.uiTitle.textContent = "";
+        this.uiDesc.textContent = "";
+        
         this.startTimer = setTimeout(() => { this.showPanel(); }, this.data.delay);
       },
 
@@ -184,22 +191,25 @@
 
       showPanel() {
         this.uiPanel.classList.add("visible");
-        // playAudio(this.data.audio); // Bỏ comment nếu muốn phát nhạc lại
         
-        const fullTitle = this.data.title;
-        const fullDesc = this.data.desc;
         let i = 0;
+        const totalLen = this.fullTitle.length + this.fullDesc.length;
         
         const typeLoop = () => {
-          if (i < fullTitle.length) {
-            this.uiTitle.innerText += fullTitle.charAt(i);
+          // Chạy Title trước
+          if (i < this.fullTitle.length) {
+            this.uiTitle.textContent += this.fullTitle.charAt(i);
             i++;
+            // Tốc độ title nhanh (30ms)
             this.typingTimer = setTimeout(typeLoop, 30);
-          } else {
-            const descIndex = i - fullTitle.length;
-            if (descIndex < fullDesc.length) {
-              this.uiDesc.innerText += fullDesc.charAt(descIndex);
+          } 
+          // Chạy Desc sau
+          else {
+            const descIndex = i - this.fullTitle.length;
+            if (descIndex < this.fullDesc.length) {
+              this.uiDesc.textContent += this.fullDesc.charAt(descIndex);
               i++;
+              // Tốc độ desc nhanh hơn tí (20ms) cho mượt
               this.typingTimer = setTimeout(typeLoop, 20);
             }
           }
@@ -208,7 +218,9 @@
       }
     });
 
-    /* REVEAL MODEL */
+    /* =========================================================
+       CÁC COMPONENT KHÁC (GIỮ NGUYÊN)
+       ========================================================= */
     AFRAME.registerComponent("reveal-model", {
       schema: {
         duration:{type:"number",default:3000},
@@ -238,7 +250,7 @@
         if(this.running) return;
         this.running = true;
         this._hardReset();
-        playAudio(this.data.audio); 
+        playAudio(this.data.audio);
         const fs = this.data.finalScale, fp = this.data.finalPos;
         requestAnimationFrame(()=>requestAnimationFrame(()=>{
           this.el.setAttribute("animation__scale", { property:"scale", to:`${fs.x} ${fs.y} ${fs.z}`, dur:this.data.duration, easing:"easeOutCubic" });
