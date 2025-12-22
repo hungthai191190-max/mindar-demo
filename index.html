@@ -82,28 +82,30 @@
     </a-entity>
 
     <!-- =========================
-         TARGET 1 – 3D MODEL (GROUND: rises from flat image + spins like a turntable)
+         TARGET 1 – 3D MODEL (GROUND)
+         - Dùng cho tranh/ảnh đặt trên mặt đất (marker nằm ngang).
+         - Mẹo: xoay "ground-anchor" -90° theo trục X để biến hệ tọa độ thành "mặt đất".
+         - Giữ hướng model như cũ bằng cách counter-rotate model +90° theo trục X.
+         - Chuyển animation vị trí từ trục Y (treo tường) sang trục Z (đứng lên khỏi mặt đất).
          ========================= -->
     <a-entity mindar-image-target="targetIndex: 1">
-
-      <!-- Parent spins around local Z (normal to the image plane). This matches a "turntable" on the marker. -->
-      <a-entity id="model-spin-root" spin-axis="axis: z; speed: 26">
-
-        <!-- Child keeps the ground-orientation tweak; reveal moves along +Z (out of the image plane) -->
+      <!-- Anchor cho marker đặt dưới đất -->
+      <a-entity id="ground-anchor" rotation="-90 0 0">
         <a-entity
           id="model"
           gltf-model="url(model.glb)"
-          rotation="-90 0 0"
+          rotation="90 0 0"
           reveal-model="duration: 3000; audio: #audio2;
                         startScale: 0.001 0.001 0.001;
                         finalScale: 0.4 0.4 0.4;
-                        startPos: 0 0 0.02;
-                        finalPos: 0 0 0.28"
-          transparent-model="opacity: 0.85"
+                        startPos: 0 0 0.08;
+                        finalPos: 0 0 0.32"
+          slow-spin
+          transparent-model="opacity: 0.6"
         ></a-entity>
-
       </a-entity>
     </a-entity>
+
 
     </a-entity>
 
@@ -348,29 +350,6 @@
         } else {
           tryPlay();
         }
-      }
-    });
-
-
-    /* =========================================================
-       SPIN-AXIS:
-       - Quay quanh 1 trục local (x/y/z) của entity CHA.
-       - Với MindAR image-target: trục local Z là hướng vuông góc mặt ảnh.
-       ========================================================= */
-    AFRAME.registerComponent("spin-axis", {
-      schema: {
-        axis: { type: "string", default: "z" }, // "x" | "y" | "z"
-        speed: { type: "number", default: 26 }  // deg/sec
-      },
-      tick: function (t, dt) {
-        if (!dt) return;
-        const obj = this.el.object3D;
-        if (!obj) return;
-        const r = (this.data.speed * Math.PI / 180) * (dt / 1000);
-        const ax = (this.data.axis || "z").toLowerCase();
-        if (ax === "x") obj.rotation.x += r;
-        else if (ax === "y") obj.rotation.y += r;
-        else obj.rotation.z += r;
       }
     });
   </script>
