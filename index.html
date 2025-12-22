@@ -85,15 +85,15 @@
          TARGET 1 – 3D MODEL (GROUND: rises from flat image + spins like a turntable)
          ========================= -->
     <a-entity mindar-image-target="targetIndex: 1">
-      <!-- Spin root: quay quanh trục VUÔNG GÓC với mặt ảnh (local Z của target) -->
+
+      <!-- Parent spins around local Z (normal to the image plane). This matches a "turntable" on the marker. -->
       <a-entity id="model-spin-root" spin-axis="axis: z; speed: 26">
 
-        <!-- Model child: chỉnh hướng (nếu model gốc đang đứng theo trục khác) -->
+        <!-- Child keeps the ground-orientation tweak; reveal moves along +Z (out of the image plane) -->
         <a-entity
           id="model"
           gltf-model="url(model.glb)"
           rotation="-90 0 0"
-          center-pivot="mode: center-and-ground"
           reveal-model="duration: 3000; audio: #audio2;
                         startScale: 0.001 0.001 0.001;
                         finalScale: 0.4 0.4 0.4;
@@ -351,10 +351,11 @@
       }
     });
 
+
     /* =========================================================
        SPIN-AXIS:
        - Quay quanh 1 trục local (x/y/z) của entity CHA.
-       - Với MindAR image-target: trục local Z là hướng vuông góc mặt ảnh (đúng kiểu "đĩa xoay").
+       - Với MindAR image-target: trục local Z là hướng vuông góc mặt ảnh.
        ========================================================= */
     AFRAME.registerComponent("spin-axis", {
       schema: {
@@ -370,49 +371,6 @@
         if (ax === "x") obj.rotation.x += r;
         else if (ax === "y") obj.rotation.y += r;
         else obj.rotation.z += r;
-      }
-    });
-
-    /* =========================================================
-       CENTER-PIVOT:
-       - Nhiều file .glb có pivot lệch => khi quay sẽ bị "bay vòng" (orbit).
-       - Component này sẽ recenter mesh về (0,0,0) để quay như đặt vật trên bàn xoay.
-       - mode:
-         - "center": đưa tâm bbox về gốc
-         - "center-and-ground": đưa tâm XZ về gốc + đặt đáy bbox chạm y=0
-       ========================================================= */
-    AFRAME.registerComponent("center-pivot", {
-      schema: { mode: { type: "string", default: "center-and-ground" } },
-      init: function () {
-        this.el.addEventListener("model-loaded", () => {
-          const obj = this.el.getObject3D("mesh");
-          if (!obj) return;
-
-          // Compute bounding box
-          const box = new THREE.Box3().setFromObject(obj);
-          const center = new THREE.Vector3();
-          box.getCenter(center);
-
-          // Move so center XZ is at origin
-          const mode = (this.data.mode || "center-and-ground").toLowerCase();
-
-          // Offset to apply
-          const offset = center.clone();
-
-          if (mode === "center-and-ground") {
-            // Ground: put bottom at y=0
-            const size = new THREE.Vector3();
-            box.getSize(size);
-            const minY = box.min.y;
-            // We want minY -> 0, so shift by minY
-            offset.y = minY;
-          }
-
-          // Translate the mesh opposite to offset
-          obj.position.x -= offset.x;
-          obj.position.y -= offset.y;
-          obj.position.z -= offset.z;
-        });
       }
     });
   </script>
