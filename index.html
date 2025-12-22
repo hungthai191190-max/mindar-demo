@@ -6,29 +6,81 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
   />
-  <title>MindAR – Text Always Face Camera</title>
+  <title>MindAR – HTML Overlay UI</title>
 
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
-  <script src="https://unpkg.com/aframe-troika-text/dist/aframe-troika-text.min.js"></script>
-
   <style>
-    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
-    a-scene { width: 100%; height: 100%; position: absolute; inset: 0; }
-    #scanning-overlay{
-      position:absolute; inset:0; z-index:999;
-      background:rgba(0,0,0,.85); color:#fff;
-      display:flex; align-items:center; justify-content:center;
-      text-align:center; font-family:sans-serif;
-      padding: 20px;
+    /* Reset cơ bản */
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+    
+    /* Scene AR */
+    a-scene { width: 100%; height: 100%; position: absolute; inset: 0; z-index: 1; }
+
+    /* Màn hình chờ */
+    #scanning-overlay {
+      position: absolute; inset: 0; z-index: 999;
+      background: rgba(0, 0, 0, 0.85); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      text-align: center; padding: 20px;
+      transition: opacity 0.5s;
     }
-    .hidden{ display:none !important; }
+    .hidden { display: none !important; opacity: 0; pointer-events: none; }
+
+    /* --- GIAO DIỆN UI (Mới) --- */
+    #info-panel {
+      position: fixed;
+      bottom: 30px; left: 20px; right: 20px; /* Cách lề */
+      z-index: 100; /* Nằm trên AR */
+      
+      /* Hiệu ứng nền kính mờ cho sang trọng */
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      
+      border-left: 5px solid #FFD700; /* Viền vàng điểm nhấn */
+      padding: 15px;
+      border-radius: 8px;
+      color: #fff;
+      
+      /* Mặc định ẩn, sẽ hiện bằng JS */
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    /* Khi kích hoạt class .visible */
+    #info-panel.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    #ui-title {
+      margin: 0 0 5px 0;
+      font-size: 18px;
+      font-weight: bold;
+      color: #FFD700; /* Vàng kim */
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    #ui-desc {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #e0e0e0;
+    }
   </style>
 </head>
 
 <body>
   <div id="scanning-overlay">Đang khởi động Camera…<br/>Vui lòng đợi!</div>
+
+  <div id="info-panel">
+    <div id="ui-title"></div>
+    <div id="ui-desc"></div>
+  </div>
 
   <a-scene
     mindar-image="imageTargetSrc: ./targets.mind; filterMinCF:0.0001; filterBeta:0.001;"
@@ -41,34 +93,19 @@
     <a-assets>
       <audio id="audio1" src="audio1.mp3" preload="auto"></audio>
       <audio id="audio2" src="audio2.mp3" preload="auto"></audio>
-      <video
-        id="video1"
-        src="video1.mp4"
-        preload="auto"
-        loop
-        muted
-        playsinline
-        webkit-playsinline
-        crossorigin="anonymous"
-      ></video>
+      <video id="video1" src="video1.mp4" preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
     </a-assets>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
     <a-entity mindar-image-target="targetIndex: 0">
-      <a-entity position="0 0.2 0" reveal-typewriter="text: PHÒNG TRUYỀN THỐNG\nNĂM 1990; duration: 3000; audio: #audio1">
-        <a-troika-text class="tw" value="" color="#000000" opacity="0.55" fontSize="0.10" maxWidth="2.2" align="center" anchor="center" position="0.02 -0.02 -0.03"></a-troika-text>
-        <a-troika-text class="tw" value="" color="#00E5FF" opacity="0.35" fontSize="0.10" maxWidth="2.2" align="center" anchor="center" position="0 0 -0.02"></a-troika-text>
-        <a-troika-text class="tw" value="" color="#FFD700" opacity="1" fontSize="0.10" maxWidth="2.2" align="center" anchor="center" position="0 0 0"></a-troika-text>
       </a-entity>
-    </a-entity>
 
     <a-entity mindar-image-target="targetIndex: 1">
       
       <a-entity
         reveal-model="duration: 3000; audio: #audio2;
-                      startScale: 0.001 0.001 0.001; 
-                      finalScale: 0.6 0.6 0.6;
+                      startScale: 0.001 0.001 0.001; finalScale: 0.6 0.6 0.6;
                       startPos: 0 0.08 0; finalPos: 0 0.32 0"
         slow-spin
       >
@@ -80,36 +117,14 @@
         ></a-entity>
       </a-entity>
 
-      <a-entity
-        delayed-text="
+      <a-entity 
+        html-overlay-controller="
           delay: 3000;
           audio: #audio2;
-          title: Tên lửa P-15 U;
-          desc: Được sử dụng trong kháng chiến chống Mỹ\ncứu nước năm 1945, 1967,\nđược biên chế cho Trung tâm BĐKT năm 2008
+          title: TÊN LỬA P-15 U;
+          desc: Được sử dụng trong kháng chiến chống Mỹ cứu nước năm 1945, 1967. Được biên chế cho Trung tâm BĐKT năm 2008.
         "
-      >
-        <a-troika-text 
-          class="d-title" value="" 
-          color="#FFD700" 
-          fontSize="0.09" 
-          maxWidth="2" 
-          align="center" anchor="center" 
-          position="0 0.85 0.15"
-          look-at-camera
-          font="https://fonts.gstatic.com/s/roboto/v29/KFOmCnqEu92Fr1Mu4mxM.woff"
-        ></a-troika-text>
-        
-        <a-troika-text 
-          class="d-desc" value="" 
-          color="#FFFFFF" 
-          fontSize="0.018" 
-          maxWidth="1.5" 
-          align="left" anchor="center" 
-          position="0.5 0.32 0.15"
-          look-at-camera
-          lineHeight="1.5"
-        ></a-troika-text>
-      </a-entity>
+      ></a-entity>
 
     </a-entity>
 
@@ -120,36 +135,25 @@
   </a-scene>
 
   <script>
+    // --- XỬ LÝ MÀN HÌNH CHỜ ---
     const sceneEl = document.querySelector("a-scene");
     const overlay = document.querySelector("#scanning-overlay");
     sceneEl.addEventListener("arReady", () => overlay.classList.add("hidden"));
 
+    // --- HÀM PHÁT NHẠC CHUNG ---
     function playAudio(audioEl){
       if(!audioEl) return;
       try{
         audioEl.currentTime = 0;
-        const p = audioEl.play();
-        if(p && p.catch) p.catch(()=>{});
+        audioEl.play().catch(()=>{});
       }catch(e){}
     }
 
-    /* ---------------------------------------------------------
-       MỚI: LOOK AT CAMERA (Giúp vật thể luôn xoay mặt về người dùng)
-       --------------------------------------------------------- */
-    AFRAME.registerComponent('look-at-camera', {
-      tick: function () {
-        // Lấy camera trong scene
-        var camera = this.el.sceneEl.camera;
-        if (!camera) return;
-        // Bắt object nhìn vào vị trí của camera
-        this.el.object3D.lookAt(camera.el.object3D.position);
-      }
-    });
-
-    /* ---------------------------------------------------------
-       DELAYED TEXT
-       --------------------------------------------------------- */
-    AFRAME.registerComponent("delayed-text", {
+    /* =========================================================
+       COMPONENT: HTML OVERLAY CONTROLLER
+       (Kết nối giữa AR và giao diện HTML 2D)
+       ========================================================= */
+    AFRAME.registerComponent("html-overlay-controller", {
       schema: {
         delay: {type: "number", default: 3000},
         audio: {type: "selector"},
@@ -157,87 +161,78 @@
         desc: {type: "string"}
       },
       init() {
-        this.titleEl = this.el.querySelector(".d-title");
-        this.descEl = this.el.querySelector(".d-desc");
+        // Lấy các thẻ HTML bên ngoài Scene
+        this.uiPanel = document.getElementById("info-panel");
+        this.uiTitle = document.getElementById("ui-title");
+        this.uiDesc = document.getElementById("ui-desc");
+        
         this.target = this.el.closest("[mindar-image-target]");
-        this.timer = null;
+        
+        // Timer quản lý
+        this.startTimer = null;
         this.typingTimer = null;
 
-        this.target.addEventListener("targetFound", () => {
-          this.titleEl.setAttribute("value", "");
-          this.descEl.setAttribute("value", "");
-          this.timer = setTimeout(() => { this.startTyping(); }, this.data.delay);
-        });
-
-        this.target.addEventListener("targetLost", () => {
-          if(this.timer) clearTimeout(this.timer);
-          if(this.typingTimer) clearTimeout(this.typingTimer);
-          this.titleEl.setAttribute("value", "");
-          this.descEl.setAttribute("value", "");
-        });
+        // Bắt sự kiện
+        this.target.addEventListener("targetFound", () => this.onFound());
+        this.target.addEventListener("targetLost", () => this.onLost());
       },
-      startTyping() {
-        playAudio(this.data.audio);
-        const title = this.data.title;
-        const desc = this.data.desc;
+      
+      onFound() {
+        // Reset nội dung cũ
+        this.uiTitle.innerText = "";
+        this.uiDesc.innerText = "";
+        
+        // Đợi delay (để model bay lên xong) mới hiện bảng
+        this.startTimer = setTimeout(() => {
+          this.showPanel();
+        }, this.data.delay);
+      },
+
+      onLost() {
+        // Hủy mọi thứ ngay lập tức
+        if (this.startTimer) clearTimeout(this.startTimer);
+        if (this.typingTimer) clearTimeout(this.typingTimer);
+        
+        // Ẩn bảng
+        this.uiPanel.classList.remove("visible");
+      },
+
+      showPanel() {
+        // 1. Hiện bảng (Fade in)
+        this.uiPanel.classList.add("visible");
+        
+        // 2. Phát nhạc (nếu chưa phát ở đoạn reveal model)
+        // playAudio(this.data.audio); // Bỏ comment nếu muốn phát lại nhạc lúc hiện chữ
+
+        // 3. Hiệu ứng gõ chữ (Typewriter) trên HTML
+        const fullTitle = this.data.title;
+        const fullDesc = this.data.desc;
+        
         let i = 0;
-        const loop = () => {
-          let currentTitle = "";
-          let currentDesc = "";
-          if (i <= title.length) {
-            currentTitle = title.slice(0, i);
+        
+        const typeLoop = () => {
+          // Logic: Chạy hết Title rồi mới chạy Desc
+          if (i < fullTitle.length) {
+            this.uiTitle.innerText += fullTitle.charAt(i);
+            i++;
+            this.typingTimer = setTimeout(typeLoop, 30); // Tốc độ title
           } else {
-            currentTitle = title;
-            currentDesc = desc.slice(0, i - title.length);
-          }
-          this.titleEl.setAttribute("value", currentTitle);
-          this.descEl.setAttribute("value", currentDesc);
-          i++;
-          if (i <= title.length + desc.length) {
-            this.typingTimer = setTimeout(loop, 25);
+            // Đã xong title, chuyển sang desc
+            const descIndex = i - fullTitle.length;
+            if (descIndex < fullDesc.length) {
+              this.uiDesc.innerText += fullDesc.charAt(descIndex);
+              i++;
+              this.typingTimer = setTimeout(typeLoop, 20); // Tốc độ desc nhanh hơn xíu
+            }
           }
         };
-        loop();
+        typeLoop();
       }
     });
 
-    /* ---------------------------------------------------------
-       CÁC COMPONENT CŨ
-       --------------------------------------------------------- */
-    AFRAME.registerComponent("reveal-typewriter", {
-      schema: { text:{type:"string"}, duration:{type:"number",default:3000}, audio:{type:"selector"} },
-      init(){
-        this.layers = this.el.querySelectorAll(".tw");
-        this.target = this.el.closest("[mindar-image-target]");
-        this.timer = null;
-        this.target.addEventListener("targetFound", ()=>this.restart());
-        this.target.addEventListener("targetLost", ()=>this.reset());
-        this.reset();
-      },
-      reset(){
-        if(this.timer) { clearTimeout(this.timer); this.timer = null; }
-        this.layers.forEach(l=>l.setAttribute("value",""));
-        this.el.removeAttribute("animation__pop");
-        this.el.setAttribute("scale","0.001 0.001 0.001");
-      },
-      restart(){
-        this.reset();
-        playAudio(this.data.audio);
-        this.el.setAttribute("animation__pop", { property:"scale", to:"1 1 1", dur:400, easing:"easeOutCubic" });
-        const text = this.data.text || "";
-        let i = 0;
-        const step = Math.max(15, Math.floor(this.data.duration / Math.max(1, text.length)));
-        const loop = ()=>{
-          const shown = text.slice(0, i);
-          this.layers.forEach(l=>l.setAttribute("value", shown));
-          i++;
-          if(i <= text.length) this.timer = setTimeout(loop, step);
-          else this.layers.forEach(l=>l.setAttribute("value", text));
-        };
-        loop();
-      }
-    });
-
+    /* =========================================================
+       CÁC COMPONENT CŨ CẦN THIẾT (MODEL, SPIN, VIDEO...)
+       ========================================================= */
     AFRAME.registerComponent("reveal-model", {
       schema: {
         duration:{type:"number",default:3000},
@@ -267,7 +262,7 @@
         if(this.running) return;
         this.running = true;
         this._hardReset();
-        playAudio(this.data.audio);
+        playAudio(this.data.audio); // Nhạc phát khi model bay lên
         const fs = this.data.finalScale, fp = this.data.finalPos;
         requestAnimationFrame(()=>requestAnimationFrame(()=>{
           this.el.setAttribute("animation__scale", { property:"scale", to:`${fs.x} ${fs.y} ${fs.z}`, dur:this.data.duration, easing:"easeOutCubic" });
