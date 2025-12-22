@@ -107,7 +107,7 @@
           radius="0.42"
           position="0 0 0.002"
           rotation="0 0 0"
-          material="transparent:true; opacity:0; side:double"
+          material="transparent:true; opacity:0; side:double; blending:additive; depthWrite:false; depthTest:false"
           magic-ring="baseHue: 190; hueSpan: 120; glow: 1; thickness: 0.18"
         ></a-circle>
 
@@ -117,24 +117,24 @@
           radius-outer="0.42"
           rotation="0 0 0"
           position="0 0 0.003"
-          material="color:#7ff6ff; shader:flat; transparent:true; opacity:0;"
+          material="color:#7ff6ff; shader:flat; transparent:true; opacity:0; blending:additive; depthWrite:false; depthTest:false"
         ></a-ring>
 
         <!-- Ánh sáng "thật" dạng hình nón ngược: chóp ở mặt ảnh, đáy ở gần model, mờ dần -->
         <a-entity id="beamFx"
-          geometry="primitive: cone; radiusBottom: 0.03; radiusTop: 0.26; height: 0.62; segmentsRadial: 36"
+          geometry="primitive: cone; radiusBottom: 0.03; radiusTop: 0.26; height: 0.62; segmentsRadial: 36; openEnded: true"
           position="0 0.30 0"
           rotation="0 0 0"
-          material="color:#00E5FF; transparent:true; opacity:0; side:double; blending:additive; depthWrite:false"
+          material="color:#00E5FF; transparent:true; opacity:0; side:double; blending:additive; depthWrite:false; depthTest:false"
           cone-glow="min:0.10; max:0.22; speed:1.15"
         ></a-entity>
 
         <!-- Lớp nón trong (sáng hơn, nhỏ hơn) để tạo cảm giác gradient -->
         <a-entity id="beamFxInner"
-          geometry="primitive: cone; radiusBottom: 0.02; radiusTop: 0.18; height: 0.55; segmentsRadial: 28"
+          geometry="primitive: cone; radiusBottom: 0.02; radiusTop: 0.18; height: 0.55; segmentsRadial: 28; openEnded: true"
           position="0 0.27 0"
           rotation="0 0 0"
-          material="color:#ffffff; transparent:true; opacity:0; side:double; blending:additive; depthWrite:false"
+          material="color:#ffffff; transparent:true; opacity:0; side:double; blending:additive; depthWrite:false; depthTest:false"
           cone-glow="min:0.06; max:0.14; speed:1.35"
         ></a-entity>
 
