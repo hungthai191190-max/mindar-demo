@@ -138,8 +138,37 @@ AFRAME.registerComponent("reveal-model", {
   }
 });
 
-// ... (Giữ nguyên các component video-control, video-fx, slow-spin, transparent-model không cần sửa) ...
+
 AFRAME.registerComponent('video-control', { schema: { video: { type: 'selector' }, delay: { type: 'number', default: 1500 } }, init: function() { this.target = this.el.closest("[mindar-image-target]"); this.videoEl = this.data.video; this.videoPlane = this.target.querySelector('a-video'); this.timer = null; this._reset(); this.target.addEventListener("targetFound", () => { this.timer = setTimeout(() => { this._playAndFade(); }, this.data.delay); }); this.target.addEventListener("targetLost", () => { this._reset(); }); }, _reset: function() { if (this.timer) clearTimeout(this.timer); if (this.videoEl) { try { this.videoEl.pause(); this.videoEl.currentTime = 0; } catch (e) {} } if (this.videoPlane) { const mesh = this.videoPlane.getObject3D('mesh'); if (mesh && mesh.material) { mesh.material.opacity = 0; } this.videoPlane.setAttribute('opacity', '0'); try { this.videoPlane.removeAttribute('animation__fade'); } catch (e) {} } }, _playAndFade: function() { if (this.videoEl) { this.videoEl.muted = true; this.videoEl.setAttribute("playsinline", ""); try { this.videoEl.play(); } catch (e) {} } if (this.videoPlane) { this.videoPlane.emit('fade-in'); } } });
 AFRAME.registerComponent('video-fx', { schema: { opacity: { type: 'number', default: 0.9 }, softness: { type: 'number', default: 0.2 } }, init: function() { const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256; const ctx = canvas.getContext('2d'); const gradient = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2); const start = Math.max(0, 1.0 - this.data.softness * 2); gradient.addColorStop(0, 'rgba(255, 255, 255, 1)'); gradient.addColorStop(start, 'rgba(255, 255, 255, 1)'); gradient.addColorStop(1, 'rgba(0, 0, 0, 0)'); ctx.fillStyle = gradient; ctx.fillRect(0, 0, canvas.width, canvas.height); const maskTexture = new THREE.CanvasTexture(canvas); this.el.addEventListener('materialtextureloaded', () => { const mesh = this.el.getObject3D('mesh'); if (mesh && mesh.material) { mesh.material.alphaMap = maskTexture; mesh.material.transparent = true; mesh.material.opacity = 0; mesh.material.blending = THREE.AdditiveBlending; mesh.material.needsUpdate = true; } }); } });
 AFRAME.registerComponent("slow-spin", { init() { this.el.setAttribute("animation__spin", { property: "rotation", to: "0 0 360", loop: true, dur: 14000, easing: "linear" }); } });
-AFRAME.registerComponent("transparent-model", { schema: { opacity: { type: "number", default: 0.6 } }, init() { this.el.addEventListener("model-loaded", () => { const op = this.data.opacity; this.el.object3D.traverse((n) => { if (n.material) { const mats = Array.isArray(n.material) ? n.material : [n.material]; mats.forEach((m) => { m.transparent = true; m.opacity = op; m.depthWrite = true; m.side = THREE.FrontSide; m.needsUpdate = true; }); } }); }); } });
+AFRAME.registerComponent("transparent-model", {
+  schema: { opacity: { type: "number", default: 0.85 } }, // Tăng lên 0.85 cho đỡ ảo
+  init() {
+    this.el.addEventListener("model-loaded", () => {
+      const op = this.data.opacity;
+      this.el.object3D.traverse((n) => {
+        if (n.isMesh) { // Chỉ tác động lên lưới 3D
+          if (n.material) {
+            const mats = Array.isArray(n.material) ? n.material : [n.material];
+            mats.forEach((m) => {
+              // 1. Bật trong suốt
+              m.transparent = true;
+              m.opacity = op;
+
+              // 2. KỸ THUẬT CHE RUỘT (QUAN TRỌNG NHẤT)
+           
+              m.depthWrite = true; 
+              
+              // 3. Chỉ vẽ mặt ngoài (Không vẽ mặt trong)
+              m.side = THREE.FrontSide; 
+
+              m.needsUpdate = true;
+            });
+          }
+        }
+      });
+    });
+  }
+});
+
