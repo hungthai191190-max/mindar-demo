@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>MindAR – Auto Start & Visible Border</title>
+  <title>MindAR – Debug Border</title>
 
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
@@ -13,17 +13,7 @@
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
     a-scene { width: 100%; height: 100%; position: absolute; inset: 0; z-index: 1; }
 
-    /* Màn hình loading nhẹ khi mới vào (Tự tắt khi camera lên) */
-    #scanning-overlay {
-      position: absolute; inset: 0; z-index: 999;
-      background: rgba(0, 0, 0, 0.8);
-      display: flex; align-items: center; justify-content: center;
-      color: #fff; pointer-events: none;
-      transition: opacity 0.5s;
-    }
-    #scanning-overlay.hidden { opacity: 0; }
-
-    /* UI PANEL (Compact Mode) */
+    /* UI PANEL (Gọn gàng) */
     #info-panel {
       position: fixed; bottom: 20px; left: 20px; right: 20px; z-index: 100;
       background: rgba(10, 10, 10, 0.75); backdrop-filter: blur(8px);
@@ -38,12 +28,10 @@
 </head>
 
 <body>
-  <div id="scanning-overlay">Đang khởi động Camera...</div>
-
   <div id="info-panel"><div id="ui-title"></div><div id="ui-desc"></div></div>
 
   <a-scene
-    mindar-image="imageTargetSrc: ./targets.mind; filterMinCF:0.0001; filterBeta:0.001; uiLoading: no;"
+    mindar-image="imageTargetSrc: ./targets.mind; filterMinCF:0.0001; filterBeta:0.001; uiLoading: no; autoStart: true;"
     renderer="colorManagement: true, physicallyCorrectLights"
     color-space="sRGB"
     vr-mode-ui="enabled: false"
@@ -59,7 +47,8 @@
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
     <a-entity mindar-image-target="targetIndex: 0">
-      <a-entity border-runner="color: #00E5FF; w: 1; h: 0.8; length: 0.3"></a-entity>
+      <a-entity border-runner="color: #00E5FF; w: 1.1; h: 0.9; length: 0.4"></a-entity>
+
       <a-entity 
         html-overlay-controller="delay: 1000; audio: #audio2"
         data-title="PHÒNG TRUYỀN THỐNG"
@@ -72,41 +61,23 @@
       <a-entity reveal-model="duration: 3000; audio: #audio2; startScale: 0.001 0.001 0.001; finalScale: 0.6 0.6 0.6; startPos: 0 0.08 0; finalPos: 0 0.32 0" slow-spin>
         <a-entity id="model" gltf-model="url(model.glb)" rotation="90 0 0" transparent-model="opacity: 0.6"></a-entity>
       </a-entity>
-      <a-entity 
-        html-overlay-controller="delay: 3000; audio: #audio2"
-        data-title="TÊN LỬA P-15 U"
-        data-desc="Được sử dụng trong kháng chiến chống Mỹ cứu nước năm 1945, 1967. Được biên chế cho Trung tâm BĐKT năm 2008."
-        data-color="#FFD700"
-      ></a-entity>
+      <a-entity html-overlay-controller="delay: 3000; audio: #audio2" data-title="TÊN LỬA P-15 U" data-desc="Được sử dụng trong kháng chiến chống Mỹ cứu nước năm 1945, 1967. Được biên chế cho Trung tâm BĐKT năm 2008." data-color="#FFD700"></a-entity>
     </a-entity>
 
     <a-entity mindar-image-target="targetIndex: 2" video-on-target="video: #video1; restart: true">
       <a-video id="video-plane" src="#video1" width="1.0" height="0.5625" position="0 0 0.001" video-fx="opacity: 0.9; softness: 0.3"></a-video>
-      <a-entity 
-        html-overlay-controller="delay: 500;" 
-        data-title="VIDEO TƯ LIỆU"
-        data-desc="Quay năm 2025"
-        data-color="#FFAB00"
-      ></a-entity>
+      <a-entity html-overlay-controller="delay: 500;" data-title="VIDEO TƯ LIỆU" data-desc="Quay năm 2025" data-color="#FFAB00"></a-entity>
     </a-entity>
 
   </a-scene>
 
   <script>
     const sceneEl = document.querySelector("a-scene");
-    const overlay = document.querySelector("#scanning-overlay");
 
-    // Tự động tắt màn hình chờ khi AR sẵn sàng
-    sceneEl.addEventListener("arReady", () => {
-      overlay.classList.add("hidden");
-    });
-    
-    // Xử lý Audio: Do bỏ nút Start, ta cần bắt sự kiện chạm màn hình lần đầu
-    // để "mở khóa" âm thanh trên iOS/Android
+    // Mở khóa Audio tự động khi chạm màn hình (do đã bỏ nút Start)
     function unlockAudio() {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (AudioContext) { new AudioContext().resume(); }
-      // Sau khi chạm 1 lần thì xóa sự kiện này đi
       document.body.removeEventListener('click', unlockAudio);
       document.body.removeEventListener('touchstart', unlockAudio);
     }
@@ -116,9 +87,10 @@
     function playAudio(audioEl){ if(!audioEl) return; try{ audioEl.currentTime = 0; audioEl.play().catch(()=>{}); }catch(e){} }
 
     /* =========================================================
-       COMPONENT: BORDER RUNNER (FIXED VISIBILITY)
-       - Dùng a-box thay vì a-plane để nhìn thấy từ mọi phía.
-       - Nâng độ cao zPos lên 0.03 để không bị ảnh che.
+       COMPONENT: BORDER RUNNER (SUPER VISIBLE VERSION)
+       - Z-Pos: 0.05 (Nổi 5cm) -> Đảm bảo không bị che.
+       - Thickness: 0.04 (Dày gấp đôi) -> Đảm bảo dễ nhìn.
+       - Thêm khung nền tĩnh (Static Frame) để debug vị trí.
        ========================================================= */
     AFRAME.registerComponent('border-runner', {
       schema: {
@@ -129,54 +101,69 @@
       },
       init: function () {
         const {color, w, h, length} = this.data;
-        const thickness = 0.03; // Dày hơn chút cho dễ thấy
-        const zPos = 0.05;      // QUAN TRỌNG: Nổi lên 5cm so với mặt ảnh (đảm bảo không bị che)
+        const thickness = 0.04; // Dày lên 4cm
+        const zPos = 0.05;      // Nổi lên 5cm
 
-        // Helper tạo khối hộp (Box)
+        // 1. Tạo Khung tĩnh mờ (Để biết vị trí khung ở đâu)
+        const frameContainer = document.createElement('a-entity');
+        // Vẽ 4 thanh tĩnh mờ
+        const staticOpacity = 0.2;
+        const t = 0.01; // độ dày khung tĩnh
+        // Top
+        const sTop = document.createElement('a-box'); sTop.setAttribute('color', '#FFF'); sTop.setAttribute('opacity', staticOpacity); sTop.setAttribute('width', w); sTop.setAttribute('height', t); sTop.setAttribute('depth', 0.01); sTop.setAttribute('position', `0 ${h/2} ${zPos - 0.01}`);
+        // Bot
+        const sBot = document.createElement('a-box'); sBot.setAttribute('color', '#FFF'); sBot.setAttribute('opacity', staticOpacity); sBot.setAttribute('width', w); sBot.setAttribute('height', t); sBot.setAttribute('depth', 0.01); sBot.setAttribute('position', `0 ${-h/2} ${zPos - 0.01}`);
+        // Left
+        const sLeft = document.createElement('a-box'); sLeft.setAttribute('color', '#FFF'); sLeft.setAttribute('opacity', staticOpacity); sLeft.setAttribute('width', t); sLeft.setAttribute('height', h); sLeft.setAttribute('depth', 0.01); sLeft.setAttribute('position', `${-w/2} 0 ${zPos - 0.01}`);
+        // Right
+        const sRight = document.createElement('a-box'); sRight.setAttribute('color', '#FFF'); sRight.setAttribute('opacity', staticOpacity); sRight.setAttribute('width', t); sRight.setAttribute('height', h); sRight.setAttribute('depth', 0.01); sRight.setAttribute('position', `${w/2} 0 ${zPos - 0.01}`);
+        
+        frameContainer.appendChild(sTop); frameContainer.appendChild(sBot); frameContainer.appendChild(sLeft); frameContainer.appendChild(sRight);
+        frameContainer.setAttribute('visible', false); // Mặc định ẩn, hiện khi found
+        this.el.appendChild(frameContainer);
+
+        // 2. Tạo Vạch chạy (Runner)
         const createBox = (id, width, height, startPos, endPos) => {
           const el = document.createElement('a-box');
-          el.setAttribute('color', color);
-          el.setAttribute('shader', 'flat'); // Tự phát sáng, không cần đèn
-          el.setAttribute('width', width);
-          el.setAttribute('height', height);
-          el.setAttribute('depth', 0.01);    // Độ dày khối
-          el.setAttribute('position', startPos);
+          el.setAttribute('color', color); 
+          el.setAttribute('shader', 'flat'); // Tự phát sáng
+          el.setAttribute('width', width); 
+          el.setAttribute('height', height); 
+          el.setAttribute('depth', 0.02); // Dày khối
+          el.setAttribute('position', startPos); 
           el.setAttribute('visible', false);
           
           el.setAttribute(`animation__move`, {
-            property: 'position',
-            to: endPos,
-            dur: 600,
-            easing: 'linear',
-            startEvents: 'run'
+            property: 'position', to: endPos, dur: 600, easing: 'linear', startEvents: 'run'
           });
           return el;
         };
 
-        const halfW = w / 2;
-        const halfH = h / 2;
-
-        // TOP (Chạy ngang)
+        const halfW = w / 2; const halfH = h / 2;
+        // Tọa độ 4 vạch chạy
         const topEl = createBox('top', length, thickness, `${-halfW} ${halfH} ${zPos}`, `${halfW} ${halfH} ${zPos}`);
-        // RIGHT (Chạy dọc)
         const rightEl = createBox('right', thickness, length, `${halfW} ${halfH} ${zPos}`, `${halfW} ${-halfH} ${zPos}`);
-        // BOTTOM (Chạy ngang)
         const botEl = createBox('bot', length, thickness, `${halfW} ${-halfH} ${zPos}`, `${-halfW} ${-halfH} ${zPos}`);
-        // LEFT (Chạy dọc)
         const leftEl = createBox('left', thickness, length, `${-halfW} ${-halfH} ${zPos}`, `${-halfW} ${halfH} ${zPos}`);
 
         this.el.appendChild(topEl); this.el.appendChild(rightEl); this.el.appendChild(botEl); this.el.appendChild(leftEl);
 
-        // Logic chạy tiếp sức
-        this.el.addEventListener('targetFound', () => { topEl.setAttribute('visible', true); topEl.emit('run'); });
+        // --- EVENTS ---
+        this.el.addEventListener('targetFound', () => { 
+          frameContainer.setAttribute('visible', true); // Hiện khung tĩnh
+          topEl.setAttribute('visible', true); 
+          topEl.emit('run'); // Bắt đầu chạy
+        });
+
         this.el.addEventListener('targetLost', () => { 
+          frameContainer.setAttribute('visible', false);
           [topEl, rightEl, botEl, leftEl].forEach(el => { 
             el.setAttribute('visible', false); 
-            // Reset animation hack
             try{ el.components.animation__move.animation.currentTime = 0; }catch(e){}
           }); 
         });
 
+        // Chuyền đuốc (Relay)
         topEl.addEventListener('animationcomplete__move', () => { topEl.setAttribute('visible', false); rightEl.setAttribute('visible', true); rightEl.emit('run'); });
         rightEl.addEventListener('animationcomplete__move', () => { rightEl.setAttribute('visible', false); botEl.setAttribute('visible', true); botEl.emit('run'); });
         botEl.addEventListener('animationcomplete__move', () => { botEl.setAttribute('visible', false); leftEl.setAttribute('visible', true); leftEl.emit('run'); });
@@ -184,7 +171,7 @@
       }
     });
 
-    // --- CÁC COMPONENT CŨ ---
+    // --- CÁC COMPONENT CŨ GIỮ NGUYÊN ---
     AFRAME.registerComponent('video-fx', { schema: { opacity: {type: 'number', default: 0.9}, softness: {type: 'number', default: 0.2} }, init: function () { const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256; const ctx = canvas.getContext('2d'); const gradient = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2); const start = Math.max(0, 1.0 - this.data.softness * 2); gradient.addColorStop(0, 'rgba(255, 255, 255, 1)'); gradient.addColorStop(start, 'rgba(255, 255, 255, 1)'); gradient.addColorStop(1, 'rgba(0, 0, 0, 0)'); ctx.fillStyle = gradient; ctx.fillRect(0, 0, canvas.width, canvas.height); const maskTexture = new THREE.CanvasTexture(canvas); this.el.addEventListener('materialtextureloaded', () => { const mesh = this.el.getObject3D('mesh'); if (mesh && mesh.material) { mesh.material.alphaMap = maskTexture; mesh.material.transparent = true; mesh.material.opacity = this.data.opacity; mesh.material.blending = THREE.AdditiveBlending; mesh.material.needsUpdate = true; } }); } });
     AFRAME.registerComponent("html-overlay-controller", { schema: { delay: {type: "number", default: 1000}, audio: {type: "selector"} }, init() { this.uiPanel = document.getElementById("info-panel"); this.uiTitle = document.getElementById("ui-title"); this.uiDesc = document.getElementById("ui-desc"); this.fullTitle = this.el.getAttribute("data-title") || ""; this.fullDesc = this.el.getAttribute("data-desc") || ""; this.color = this.el.getAttribute("data-color") || "#FFD700"; this.target = this.el.closest("[mindar-image-target]"); this.startTimer = null; this.typingTimer = null; this.target.addEventListener("targetFound", () => this.onFound()); this.target.addEventListener("targetLost", () => this.onLost()); }, onFound() { this.uiTitle.textContent = ""; this.uiDesc.textContent = ""; this.uiPanel.style.borderLeftColor = this.color; this.uiTitle.style.color = this.color; this.startTimer = setTimeout(() => { this.showPanel(); }, this.data.delay); }, onLost() { if (this.startTimer) clearTimeout(this.startTimer); if (this.typingTimer) clearTimeout(this.typingTimer); this.uiPanel.classList.remove("visible"); }, showPanel() { this.uiPanel.classList.add("visible"); playAudio(this.data.audio); let i = 0; const typeLoop = () => { if (i < this.fullTitle.length) { this.uiTitle.textContent += this.fullTitle.charAt(i); i++; this.typingTimer = setTimeout(typeLoop, 30); } else { const descIndex = i - this.fullTitle.length; if (descIndex < this.fullDesc.length) { this.uiDesc.textContent += this.fullDesc.charAt(descIndex); i++; this.typingTimer = setTimeout(typeLoop, 20); } } }; typeLoop(); } });
     AFRAME.registerComponent("reveal-model", { schema: { duration:{type:"number",default:3000}, audio:{type:"selector"}, startScale:{type:"vec3"}, finalScale:{type:"vec3"}, startPos:{type:"vec3"}, finalPos:{type:"vec3"} }, init(){ this.target = this.el.closest("[mindar-image-target]"); this.running = false; this._hardReset(); this.target.addEventListener("targetLost", ()=>this._hardReset()); this.target.addEventListener("targetFound", ()=>this.start()); }, _hardReset(){ this.running = false; this.el.removeAttribute("animation__scale"); this.el.removeAttribute("animation__pos"); const ss = this.data.startScale, sp = this.data.startPos; this.el.setAttribute("scale", `${ss.x} ${ss.y} ${ss.z}`); this.el.setAttribute("position", `${sp.x} ${sp.y} ${sp.z}`); if(this.el.object3D){ this.el.object3D.scale.set(ss.x, ss.y, ss.z); this.el.object3D.position.set(sp.x, sp.y, sp.z); } }, start(){ if(this.running) return; this.running = true; this._hardReset(); playAudio(this.data.audio); const fs = this.data.finalScale, fp = this.data.finalPos; requestAnimationFrame(()=>requestAnimationFrame(()=>{ this.el.setAttribute("animation__scale", { property:"scale", to:`${fs.x} ${fs.y} ${fs.z}`, dur:this.data.duration, easing:"easeOutCubic" }); this.el.setAttribute("animation__pos", { property:"position", to:`${fp.x} ${fp.y} ${fp.z}`, dur:this.data.duration, easing:"easeOutCubic" }); })); } });
