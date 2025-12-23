@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>MindAR – Wall Mounted Optimized</title>
+  <title>MindAR – Auto Start & Visible Border</title>
 
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
@@ -13,7 +13,7 @@
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
     a-scene { width: 100%; height: 100%; position: absolute; inset: 0; z-index: 1; }
 
-    /* Màn hình loading (Tự tắt) */
+    /* Màn hình loading nhẹ khi mới vào (Tự tắt khi camera lên) */
     #scanning-overlay {
       position: absolute; inset: 0; z-index: 999;
       background: rgba(0, 0, 0, 0.8);
@@ -23,7 +23,7 @@
     }
     #scanning-overlay.hidden { opacity: 0; }
 
-    /* UI PANEL (Gọn gàng) */
+    /* UI PANEL (Compact Mode) */
     #info-panel {
       position: fixed; bottom: 20px; left: 20px; right: 20px; z-index: 100;
       background: rgba(10, 10, 10, 0.75); backdrop-filter: blur(8px);
@@ -96,15 +96,17 @@
     const sceneEl = document.querySelector("a-scene");
     const overlay = document.querySelector("#scanning-overlay");
 
-    // Tắt màn hình chờ
+    // Tự động tắt màn hình chờ khi AR sẵn sàng
     sceneEl.addEventListener("arReady", () => {
       overlay.classList.add("hidden");
     });
     
-    // Mở khóa Audio (cho iOS) khi chạm màn hình lần đầu
+    // Xử lý Audio: Do bỏ nút Start, ta cần bắt sự kiện chạm màn hình lần đầu
+    // để "mở khóa" âm thanh trên iOS/Android
     function unlockAudio() {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (AudioContext) { new AudioContext().resume(); }
+      // Sau khi chạm 1 lần thì xóa sự kiện này đi
       document.body.removeEventListener('click', unlockAudio);
       document.body.removeEventListener('touchstart', unlockAudio);
     }
@@ -114,8 +116,9 @@
     function playAudio(audioEl){ if(!audioEl) return; try{ audioEl.currentTime = 0; audioEl.play().catch(()=>{}); }catch(e){} }
 
     /* =========================================================
-       COMPONENT: BORDER RUNNER (Optimized for Wall)
-       - zPos: 0.01 (1cm) -> Ôm sát ảnh hơn, đỡ bị cảm giác "lơ lửng" khi nhìn nghiêng
+       COMPONENT: BORDER RUNNER (FIXED VISIBILITY)
+       - Dùng a-box thay vì a-plane để nhìn thấy từ mọi phía.
+       - Nâng độ cao zPos lên 0.03 để không bị ảnh che.
        ========================================================= */
     AFRAME.registerComponent('border-runner', {
       schema: {
@@ -126,30 +129,50 @@
       },
       init: function () {
         const {color, w, h, length} = this.data;
-        const thickness = 0.03; 
-        const zPos = 0.01;      // CẬP NHẬT: Hạ độ cao xuống 1cm cho sát tường
+        const thickness = 0.03; // Dày hơn chút cho dễ thấy
+        const zPos = 0.05;      // QUAN TRỌNG: Nổi lên 5cm so với mặt ảnh (đảm bảo không bị che)
 
+        // Helper tạo khối hộp (Box)
         const createBox = (id, width, height, startPos, endPos) => {
           const el = document.createElement('a-box');
-          el.setAttribute('color', color); el.setAttribute('shader', 'flat'); 
-          el.setAttribute('width', width); el.setAttribute('height', height); el.setAttribute('depth', 0.01);
-          el.setAttribute('position', startPos); el.setAttribute('visible', false);
-          el.setAttribute(`animation__move`, { property: 'position', to: endPos, dur: 600, easing: 'linear', startEvents: 'run' });
+          el.setAttribute('color', color);
+          el.setAttribute('shader', 'flat'); // Tự phát sáng, không cần đèn
+          el.setAttribute('width', width);
+          el.setAttribute('height', height);
+          el.setAttribute('depth', 0.01);    // Độ dày khối
+          el.setAttribute('position', startPos);
+          el.setAttribute('visible', false);
+          
+          el.setAttribute(`animation__move`, {
+            property: 'position',
+            to: endPos,
+            dur: 600,
+            easing: 'linear',
+            startEvents: 'run'
+          });
           return el;
         };
 
-        const halfW = w / 2; const halfH = h / 2;
+        const halfW = w / 2;
+        const halfH = h / 2;
+
+        // TOP (Chạy ngang)
         const topEl = createBox('top', length, thickness, `${-halfW} ${halfH} ${zPos}`, `${halfW} ${halfH} ${zPos}`);
+        // RIGHT (Chạy dọc)
         const rightEl = createBox('right', thickness, length, `${halfW} ${halfH} ${zPos}`, `${halfW} ${-halfH} ${zPos}`);
+        // BOTTOM (Chạy ngang)
         const botEl = createBox('bot', length, thickness, `${halfW} ${-halfH} ${zPos}`, `${-halfW} ${-halfH} ${zPos}`);
+        // LEFT (Chạy dọc)
         const leftEl = createBox('left', thickness, length, `${-halfW} ${-halfH} ${zPos}`, `${-halfW} ${halfH} ${zPos}`);
 
         this.el.appendChild(topEl); this.el.appendChild(rightEl); this.el.appendChild(botEl); this.el.appendChild(leftEl);
 
+        // Logic chạy tiếp sức
         this.el.addEventListener('targetFound', () => { topEl.setAttribute('visible', true); topEl.emit('run'); });
         this.el.addEventListener('targetLost', () => { 
           [topEl, rightEl, botEl, leftEl].forEach(el => { 
             el.setAttribute('visible', false); 
+            // Reset animation hack
             try{ el.components.animation__move.animation.currentTime = 0; }catch(e){}
           }); 
         });
