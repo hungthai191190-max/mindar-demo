@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>MindAR – Final Custom UI</title>
+  <title>MindAR – Wall Mounted Optimized</title>
 
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
@@ -13,25 +13,17 @@
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
     a-scene { width: 100%; height: 100%; position: absolute; inset: 0; z-index: 1; }
 
-    /* Màn hình Start */
-    #start-screen {
-      position: absolute; inset: 0; z-index: 9999;
-      background: #000;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    /* Màn hình loading (Tự tắt) */
+    #scanning-overlay {
+      position: absolute; inset: 0; z-index: 999;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; pointer-events: none;
       transition: opacity 0.5s;
     }
-    #start-screen.hidden { display: none !important; opacity: 0; pointer-events: none; }
+    #scanning-overlay.hidden { opacity: 0; }
 
-    #start-btn {
-      padding: 15px 30px; font-size: 18px; font-weight: bold; text-transform: uppercase;
-      color: #000; background: #FFD700; border: none; border-radius: 50px;
-      cursor: pointer; box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-      animation: pulse 2s infinite;
-    }
-    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-    .loading-text { color: #fff; margin-top: 20px; font-size: 14px; display: none; }
-
-    /* UI PANEL (Compact Mode) */
+    /* UI PANEL (Gọn gàng) */
     #info-panel {
       position: fixed; bottom: 20px; left: 20px; right: 20px; z-index: 100;
       background: rgba(10, 10, 10, 0.75); backdrop-filter: blur(8px);
@@ -46,15 +38,12 @@
 </head>
 
 <body>
-  <div id="start-screen">
-    <button id="start-btn">Bắt đầu trải nghiệm</button>
-    <div class="loading-text" id="loading-msg">Đang khởi động Camera...<br>Vui lòng cho phép truy cập!</div>
-  </div>
+  <div id="scanning-overlay">Đang khởi động Camera...</div>
 
   <div id="info-panel"><div id="ui-title"></div><div id="ui-desc"></div></div>
 
   <a-scene
-    mindar-image="imageTargetSrc: ./targets.mind; filterMinCF:0.0001; filterBeta:0.001; autoStart: false;"
+    mindar-image="imageTargetSrc: ./targets.mind; filterMinCF:0.0001; filterBeta:0.001; uiLoading: no;"
     renderer="colorManagement: true, physicallyCorrectLights"
     color-space="sRGB"
     vr-mode-ui="enabled: false"
@@ -71,7 +60,6 @@
 
     <a-entity mindar-image-target="targetIndex: 0">
       <a-entity border-runner="color: #00E5FF; w: 1; h: 0.8; length: 0.3"></a-entity>
-
       <a-entity 
         html-overlay-controller="delay: 1000; audio: #audio2"
         data-title="PHÒNG TRUYỀN THỐNG"
@@ -94,7 +82,6 @@
 
     <a-entity mindar-image-target="targetIndex: 2" video-on-target="video: #video1; restart: true">
       <a-video id="video-plane" src="#video1" width="1.0" height="0.5625" position="0 0 0.001" video-fx="opacity: 0.9; softness: 0.3"></a-video>
-      
       <a-entity 
         html-overlay-controller="delay: 500;" 
         data-title="VIDEO TƯ LIỆU"
@@ -107,41 +94,66 @@
 
   <script>
     const sceneEl = document.querySelector("a-scene");
-    const startScreen = document.getElementById("start-screen");
-    const startBtn = document.getElementById("start-btn");
-    const loadingMsg = document.getElementById("loading-msg");
+    const overlay = document.querySelector("#scanning-overlay");
 
-    startBtn.addEventListener("click", () => {
-      startBtn.style.display = "none"; loadingMsg.style.display = "block";
+    // Tắt màn hình chờ
+    sceneEl.addEventListener("arReady", () => {
+      overlay.classList.add("hidden");
+    });
+    
+    // Mở khóa Audio (cho iOS) khi chạm màn hình lần đầu
+    function unlockAudio() {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (AudioContext) { new AudioContext().resume(); }
-      sceneEl.systems["mindar-image-system"].start();
-    });
-    sceneEl.addEventListener("arReady", () => { startScreen.classList.add("hidden"); });
-    sceneEl.addEventListener("arError", (event) => { loadingMsg.innerHTML = "LỖI: Hãy dùng HTTPS hoặc Localhost!"; loadingMsg.style.color = "red"; });
+      document.body.removeEventListener('click', unlockAudio);
+      document.body.removeEventListener('touchstart', unlockAudio);
+    }
+    document.body.addEventListener('click', unlockAudio);
+    document.body.addEventListener('touchstart', unlockAudio);
 
     function playAudio(audioEl){ if(!audioEl) return; try{ audioEl.currentTime = 0; audioEl.play().catch(()=>{}); }catch(e){} }
 
-    /* COMPONENT: BORDER RUNNER (CHỈ DÙNG CHO TARGET 0) */
+    /* =========================================================
+       COMPONENT: BORDER RUNNER (Optimized for Wall)
+       - zPos: 0.01 (1cm) -> Ôm sát ảnh hơn, đỡ bị cảm giác "lơ lửng" khi nhìn nghiêng
+       ========================================================= */
     AFRAME.registerComponent('border-runner', {
-      schema: { color: {type: 'color', default: '#00E5FF'}, w: {type: 'number', default: 1}, h: {type: 'number', default: 0.8}, length: {type: 'number', default: 0.3} },
+      schema: {
+        color: {type: 'color', default: '#00E5FF'},
+        w: {type: 'number', default: 1},
+        h: {type: 'number', default: 0.8},
+        length: {type: 'number', default: 0.3}
+      },
       init: function () {
-        const {color, w, h, length} = this.data; const thickness = 0.02; const zPos = 0.01;
-        const createLine = (id, width, height, startPos, endPos) => {
-          const el = document.createElement('a-plane');
-          el.setAttribute('color', color); el.setAttribute('shader', 'flat'); el.setAttribute('width', width); el.setAttribute('height', height); el.setAttribute('position', startPos); el.setAttribute('visible', false);
+        const {color, w, h, length} = this.data;
+        const thickness = 0.03; 
+        const zPos = 0.01;      // CẬP NHẬT: Hạ độ cao xuống 1cm cho sát tường
+
+        const createBox = (id, width, height, startPos, endPos) => {
+          const el = document.createElement('a-box');
+          el.setAttribute('color', color); el.setAttribute('shader', 'flat'); 
+          el.setAttribute('width', width); el.setAttribute('height', height); el.setAttribute('depth', 0.01);
+          el.setAttribute('position', startPos); el.setAttribute('visible', false);
           el.setAttribute(`animation__move`, { property: 'position', to: endPos, dur: 600, easing: 'linear', startEvents: 'run' });
           return el;
         };
+
         const halfW = w / 2; const halfH = h / 2;
-        const topEl = createLine('top', length, thickness, `${-halfW} ${halfH} ${zPos}`, `${halfW} ${halfH} ${zPos}`);
-        const rightEl = createLine('right', thickness, length, `${halfW} ${halfH} ${zPos}`, `${halfW} ${-halfH} ${zPos}`);
-        const botEl = createLine('bot', length, thickness, `${halfW} ${-halfH} ${zPos}`, `${-halfW} ${-halfH} ${zPos}`);
-        const leftEl = createLine('left', thickness, length, `${-halfW} ${-halfH} ${zPos}`, `${-halfW} ${halfH} ${zPos}`);
+        const topEl = createBox('top', length, thickness, `${-halfW} ${halfH} ${zPos}`, `${halfW} ${halfH} ${zPos}`);
+        const rightEl = createBox('right', thickness, length, `${halfW} ${halfH} ${zPos}`, `${halfW} ${-halfH} ${zPos}`);
+        const botEl = createBox('bot', length, thickness, `${halfW} ${-halfH} ${zPos}`, `${-halfW} ${-halfH} ${zPos}`);
+        const leftEl = createBox('left', thickness, length, `${-halfW} ${-halfH} ${zPos}`, `${-halfW} ${halfH} ${zPos}`);
+
         this.el.appendChild(topEl); this.el.appendChild(rightEl); this.el.appendChild(botEl); this.el.appendChild(leftEl);
 
         this.el.addEventListener('targetFound', () => { topEl.setAttribute('visible', true); topEl.emit('run'); });
-        this.el.addEventListener('targetLost', () => { [topEl, rightEl, botEl, leftEl].forEach(el => { el.setAttribute('visible', false); el.components.animation__move.animation.currentTime = 0; }); });
+        this.el.addEventListener('targetLost', () => { 
+          [topEl, rightEl, botEl, leftEl].forEach(el => { 
+            el.setAttribute('visible', false); 
+            try{ el.components.animation__move.animation.currentTime = 0; }catch(e){}
+          }); 
+        });
+
         topEl.addEventListener('animationcomplete__move', () => { topEl.setAttribute('visible', false); rightEl.setAttribute('visible', true); rightEl.emit('run'); });
         rightEl.addEventListener('animationcomplete__move', () => { rightEl.setAttribute('visible', false); botEl.setAttribute('visible', true); botEl.emit('run'); });
         botEl.addEventListener('animationcomplete__move', () => { botEl.setAttribute('visible', false); leftEl.setAttribute('visible', true); leftEl.emit('run'); });
