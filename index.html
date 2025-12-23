@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>MindAR – Running Border Effect</title>
+  <title>MindAR – Final Custom UI</title>
 
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
@@ -31,18 +31,16 @@
     @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
     .loading-text { color: #fff; margin-top: 20px; font-size: 14px; display: none; }
 
-    /* UI PANEL (Compact Mode - Gọn gàng) */
+    /* UI PANEL (Compact Mode) */
     #info-panel {
-      position: fixed;
-      bottom: 20px; left: 20px; right: 20px;
-      z-index: 100;
-      background: rgba(10, 10, 10, 0.75); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      position: fixed; bottom: 20px; left: 20px; right: 20px; z-index: 100;
+      background: rgba(10, 10, 10, 0.75); backdrop-filter: blur(8px);
       border-left: 3px solid #fff; padding: 10px 15px; border-radius: 6px; color: #fff;
       max-height: 25%; overflow-y: auto; word-wrap: break-word; white-space: pre-wrap;
       opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease;
     }
     #info-panel.visible { opacity: 1; transform: translateY(0); }
-    #ui-title { margin: 0 0 4px 0; font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2; }
+    #ui-title { margin: 0 0 4px 0; font-size: 16px; font-weight: 700; text-transform: uppercase; }
     #ui-desc { margin: 0; font-size: 13px; line-height: 1.4; color: #e0e0e0; text-align: left; }
   </style>
 </head>
@@ -72,7 +70,7 @@
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
     <a-entity mindar-image-target="targetIndex: 0">
-      <a-entity border-runner="color: #00E5FF; w: 1; h: 0.75"></a-entity>
+      <a-entity border-runner="color: #00E5FF; w: 1; h: 0.8; length: 0.3"></a-entity>
 
       <a-entity 
         html-overlay-controller="delay: 1000; audio: #audio2"
@@ -86,7 +84,6 @@
       <a-entity reveal-model="duration: 3000; audio: #audio2; startScale: 0.001 0.001 0.001; finalScale: 0.6 0.6 0.6; startPos: 0 0.08 0; finalPos: 0 0.32 0" slow-spin>
         <a-entity id="model" gltf-model="url(model.glb)" rotation="90 0 0" transparent-model="opacity: 0.6"></a-entity>
       </a-entity>
-      
       <a-entity 
         html-overlay-controller="delay: 3000; audio: #audio2"
         data-title="TÊN LỬA P-15 U"
@@ -125,120 +122,30 @@
 
     function playAudio(audioEl){ if(!audioEl) return; try{ audioEl.currentTime = 0; audioEl.play().catch(()=>{}); }catch(e){} }
 
-    /* =========================================================
-       COMPONENT: BORDER RUNNER (MỚI)
-       - Tạo một đoạn vạch sáng chạy xung quanh viền ảnh
-       - Không đóng khung kín, mà là 1 đoạn chạy liên tục
-       ========================================================= */
+    /* COMPONENT: BORDER RUNNER (CHỈ DÙNG CHO TARGET 0) */
     AFRAME.registerComponent('border-runner', {
-      schema: {
-        color: {type: 'color', default: '#00E5FF'},
-        w: {type: 'number', default: 1},   // Chiều rộng ảnh
-        h: {type: 'number', default: 0.75} // Chiều cao ảnh (tùy chỉnh cho khớp)
-      },
+      schema: { color: {type: 'color', default: '#00E5FF'}, w: {type: 'number', default: 1}, h: {type: 'number', default: 0.8}, length: {type: 'number', default: 0.3} },
       init: function () {
-        const {color, w, h} = this.data;
-        const thickness = 0.015; // Độ dày của vạch chạy
-        const length = 0.3;      // Độ dài của vạch chạy
+        const {color, w, h, length} = this.data; const thickness = 0.02; const zPos = 0.01;
+        const createLine = (id, width, height, startPos, endPos) => {
+          const el = document.createElement('a-plane');
+          el.setAttribute('color', color); el.setAttribute('shader', 'flat'); el.setAttribute('width', width); el.setAttribute('height', height); el.setAttribute('position', startPos); el.setAttribute('visible', false);
+          el.setAttribute(`animation__move`, { property: 'position', to: endPos, dur: 600, easing: 'linear', startEvents: 'run' });
+          return el;
+        };
+        const halfW = w / 2; const halfH = h / 2;
+        const topEl = createLine('top', length, thickness, `${-halfW} ${halfH} ${zPos}`, `${halfW} ${halfH} ${zPos}`);
+        const rightEl = createLine('right', thickness, length, `${halfW} ${halfH} ${zPos}`, `${halfW} ${-halfH} ${zPos}`);
+        const botEl = createLine('bot', length, thickness, `${halfW} ${-halfH} ${zPos}`, `${-halfW} ${-halfH} ${zPos}`);
+        const leftEl = createLine('left', thickness, length, `${-halfW} ${-halfH} ${zPos}`, `${-halfW} ${halfH} ${zPos}`);
+        this.el.appendChild(topEl); this.el.appendChild(rightEl); this.el.appendChild(botEl); this.el.appendChild(leftEl);
 
-        // Tạo một Entity con làm "Vận động viên chạy" (Runner)
-        const runner = document.createElement('a-plane');
-        runner.setAttribute('color', color);
-        runner.setAttribute('shader', 'flat');
-        runner.setAttribute('opacity', '0.9');
-        runner.setAttribute('width', length);
-        runner.setAttribute('height', thickness);
-        
-        // Ban đầu ẩn đi
-        runner.setAttribute('visible', 'false');
-
-        this.el.appendChild(runner);
-        
-        // Tính toán tọa độ 4 góc
-        const topY = h / 2;
-        const botY = -h / 2;
-        const rightX = w / 2;
-        const leftX = -w / 2;
-        
-        // Chuỗi Animation (Chạy vòng quanh)
-        // Chúng ta sẽ dùng 4 animation nối tiếp nhau bằng sự kiện
-
-        // 1. TOP: Chạy từ Trái -> Phải
-        runner.setAttribute('animation__top', {
-          property: 'position',
-          from: `${leftX} ${topY} 0`,
-          to: `${rightX} ${topY} 0`,
-          dur: 1000,
-          easing: 'linear',
-          startEvents: 'run-top'
-        });
-
-        // 2. RIGHT: Chạy từ Trên -> Dưới (Xoay dọc)
-        runner.setAttribute('animation__right', {
-          property: 'position',
-          from: `${rightX} ${topY} 0`,
-          to: `${rightX} ${botY} 0`,
-          dur: 800,
-          easing: 'linear',
-          startEvents: 'run-right'
-        });
-
-        // 3. BOTTOM: Chạy từ Phải -> Trái
-        runner.setAttribute('animation__bot', {
-          property: 'position',
-          from: `${rightX} ${botY} 0`,
-          to: `${leftX} ${botY} 0`,
-          dur: 1000,
-          easing: 'linear',
-          startEvents: 'run-bot'
-        });
-
-        // 4. LEFT: Chạy từ Dưới -> Trên
-        runner.setAttribute('animation__left', {
-          property: 'position',
-          from: `${leftX} ${botY} 0`,
-          to: `${leftX} ${topY} 0`,
-          dur: 800,
-          easing: 'linear',
-          startEvents: 'run-left'
-        });
-
-        // --- XỬ LÝ LOGIC CHUYỂN HƯỚNG & XOAY ---
-        
-        // Bắt đầu chạy Top
-        this.el.addEventListener('targetFound', () => {
-          runner.setAttribute('visible', 'true');
-          runner.emit('run-top');
-        });
-
-        this.el.addEventListener('targetLost', () => {
-          runner.setAttribute('visible', 'false');
-          // Dừng animation bằng cách reset component (A-Frame trick)
-        });
-
-        // Khi chạy xong Top -> Xoay dọc -> Chạy Right
-        runner.addEventListener('animationcomplete__top', () => {
-          runner.setAttribute('rotation', '0 0 -90'); // Xoay dọc
-          runner.emit('run-right');
-        });
-
-        // Khi chạy xong Right -> Xoay ngang -> Chạy Bot
-        runner.addEventListener('animationcomplete__right', () => {
-          runner.setAttribute('rotation', '0 0 0'); // Xoay ngang
-          runner.emit('run-bot');
-        });
-
-        // Khi chạy xong Bot -> Xoay dọc -> Chạy Left
-        runner.addEventListener('animationcomplete__bot', () => {
-          runner.setAttribute('rotation', '0 0 -90'); // Xoay dọc
-          runner.emit('run-left');
-        });
-
-        // Khi chạy xong Left -> Xoay ngang -> Lặp lại Top
-        runner.addEventListener('animationcomplete__left', () => {
-          runner.setAttribute('rotation', '0 0 0'); // Xoay ngang
-          runner.emit('run-top');
-        });
+        this.el.addEventListener('targetFound', () => { topEl.setAttribute('visible', true); topEl.emit('run'); });
+        this.el.addEventListener('targetLost', () => { [topEl, rightEl, botEl, leftEl].forEach(el => { el.setAttribute('visible', false); el.components.animation__move.animation.currentTime = 0; }); });
+        topEl.addEventListener('animationcomplete__move', () => { topEl.setAttribute('visible', false); rightEl.setAttribute('visible', true); rightEl.emit('run'); });
+        rightEl.addEventListener('animationcomplete__move', () => { rightEl.setAttribute('visible', false); botEl.setAttribute('visible', true); botEl.emit('run'); });
+        botEl.addEventListener('animationcomplete__move', () => { botEl.setAttribute('visible', false); leftEl.setAttribute('visible', true); leftEl.emit('run'); });
+        leftEl.addEventListener('animationcomplete__move', () => { leftEl.setAttribute('visible', false); topEl.setAttribute('visible', true); topEl.emit('run'); });
       }
     });
 
