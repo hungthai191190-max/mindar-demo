@@ -3,25 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>MindAR – DEBUG MODE</title>
+  <title>MindAR – Final Running Border</title>
 
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
   <style>
     /* Reset & Font */
-    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: sans-serif; }
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
     a-scene { width: 100%; height: 100%; position: absolute; inset: 0; z-index: 1; }
 
-    /* UI PANEL */
+    /* UI PANEL (Gọn gàng, đẹp) */
     #info-panel {
       position: fixed; bottom: 20px; left: 20px; right: 20px; z-index: 100;
-      background: rgba(0, 0, 0, 0.7);
-      border-left: 5px solid red; padding: 15px; border-radius: 6px; color: #fff;
-      max-height: 25%; opacity: 0; transform: translateY(20px); transition: opacity 0.5s;
+      background: rgba(10, 10, 10, 0.75); backdrop-filter: blur(8px);
+      border-left: 3px solid #fff; padding: 10px 15px; border-radius: 6px; color: #fff;
+      max-height: 25%; overflow-y: auto; word-wrap: break-word; white-space: pre-wrap;
+      opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease;
     }
     #info-panel.visible { opacity: 1; transform: translateY(0); }
-    #ui-title { font-weight: bold; font-size: 16px; color: yellow; margin-bottom: 5px; }
+    #ui-title { margin: 0 0 4px 0; font-size: 16px; font-weight: 700; text-transform: uppercase; }
+    #ui-desc { margin: 0; font-size: 13px; line-height: 1.4; color: #e0e0e0; text-align: left; }
   </style>
 </head>
 
@@ -45,18 +47,12 @@
 
     <a-entity mindar-image-target="targetIndex: 0">
       
-      <a-box color="red" width="1.1" height="0.05" depth="0.05" position="0 0.45 0.05"></a-box>
-      
-      <a-box color="red" width="1.1" height="0.05" depth="0.05" position="0 -0.45 0.05"></a-box>
-      
-      <a-box color="green" width="0.05" height="0.9" depth="0.05" position="-0.55 0 0.05"></a-box>
-      
-      <a-box color="blue" width="0.05" height="0.9" depth="0.05" position="0.55 0 0.05"></a-box>
+      <a-entity border-runner="color: #00E5FF; w: 1.1; h: 0.9; length: 0.4"></a-entity>
 
       <a-entity 
-        html-overlay-controller="delay: 500; audio: #audio2"
+        html-overlay-controller="delay: 1000; audio: #audio2"
         data-title="PHÒNG TRUYỀN THỐNG"
-        data-desc="Kiểm tra khung màu ĐỎ - XANH"
+        data-desc="NĂM 1990"
         data-color="#00E5FF" 
       ></a-entity>
     </a-entity>
@@ -66,19 +62,20 @@
       <a-entity reveal-model="duration: 3000; audio: #audio2; startScale: 0.001 0.001 0.001; finalScale: 0.6 0.6 0.6; startPos: 0 0.08 0; finalPos: 0 0.32 0" slow-spin>
         <a-entity id="model" gltf-model="url(model.glb)" rotation="90 0 0" transparent-model="opacity: 0.6"></a-entity>
       </a-entity>
-      <a-entity html-overlay-controller="delay: 3000; audio: #audio2" data-title="TÊN LỬA P-15 U" data-desc="Mô hình tên lửa" data-color="#FFD700"></a-entity>
+      <a-entity html-overlay-controller="delay: 3000; audio: #audio2" data-title="TÊN LỬA P-15 U" data-desc="Được sử dụng trong kháng chiến chống Mỹ cứu nước năm 1945, 1967. Được biên chế cho Trung tâm BĐKT năm 2008." data-color="#FFD700"></a-entity>
     </a-entity>
 
     <a-entity mindar-image-target="targetIndex: 2" video-on-target="video: #video1; restart: true">
-      <a-video src="#video1" width="1.0" height="0.5625" position="0 0 0.001"></a-video>
-      <a-entity html-overlay-controller="delay: 500;" data-title="VIDEO TƯ LIỆU" data-desc="Video lịch sử" data-color="#FFAB00"></a-entity>
+      <a-video id="video-plane" src="#video1" width="1.0" height="0.5625" position="0 0 0.001" video-fx="opacity: 0.9; softness: 0.3"></a-video>
+      <a-entity html-overlay-controller="delay: 500;" data-title="VIDEO TƯ LIỆU" data-desc="Quay năm 2025" data-color="#FFAB00"></a-entity>
     </a-entity>
 
   </a-scene>
 
   <script>
-    // --- GIỮ NGUYÊN LOGIC CƠ BẢN ---
     const sceneEl = document.querySelector("a-scene");
+    
+    // Mở khóa Audio (Click 1 lần bất kỳ để enable tiếng)
     function unlockAudio() {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (AudioContext) { new AudioContext().resume(); }
@@ -90,36 +87,107 @@
 
     function playAudio(audioEl){ if(!audioEl) return; try{ audioEl.currentTime = 0; audioEl.play().catch(()=>{}); }catch(e){} }
 
-    /* HTML OVERLAY */
-    AFRAME.registerComponent("html-overlay-controller", {
-      schema: { delay: {type: "number", default: 1000}, audio: {type: "selector"} },
-      init() {
-        this.uiPanel = document.getElementById("info-panel");
-        this.uiTitle = document.getElementById("ui-title");
-        this.uiDesc = document.getElementById("ui-desc");
-        this.fullTitle = this.el.getAttribute("data-title") || "";
-        this.fullDesc = this.el.getAttribute("data-desc") || "";
-        this.color = this.el.getAttribute("data-color") || "white";
-        this.target = this.el.closest("[mindar-image-target]");
-        this.startTimer = null;
-        this.target.addEventListener("targetFound", () => {
-          this.uiTitle.textContent = this.fullTitle;
-          this.uiDesc.textContent = this.fullDesc;
-          this.uiTitle.style.color = this.color;
-          this.uiPanel.style.borderLeftColor = this.color;
-          this.startTimer = setTimeout(() => { 
-             this.uiPanel.classList.add("visible");
-             playAudio(this.data.audio);
-          }, this.data.delay);
+    /* =========================================================
+       COMPONENT: BORDER RUNNER (FINAL)
+       - Dựa trên cấu trúc a-box của bản debug (đảm bảo nhìn thấy)
+       - Thêm animation chạy vòng quanh.
+       ========================================================= */
+    AFRAME.registerComponent('border-runner', {
+      schema: {
+        color: {type: 'color', default: '#00E5FF'},
+        w: {type: 'number', default: 1},
+        h: {type: 'number', default: 0.8},
+        length: {type: 'number', default: 0.3}
+      },
+      init: function () {
+        const {color, w, h, length} = this.data;
+        const thickness = 0.03; // Độ dày 3cm (đủ để nhìn rõ)
+        const zPos = 0.05;      // Nổi lên 5cm (giống bản debug)
+
+        // Hàm tạo Box chạy
+        const createRunner = (id, width, height, startPos, endPos) => {
+          const el = document.createElement('a-box');
+          el.setAttribute('color', color);
+          el.setAttribute('shader', 'flat'); // Tự phát sáng
+          el.setAttribute('width', width);
+          el.setAttribute('height', height);
+          el.setAttribute('depth', 0.02);    // Dày khối
+          el.setAttribute('position', startPos);
+          el.setAttribute('visible', false); // Ẩn lúc đầu
+          
+          // Animation di chuyển
+          el.setAttribute(`animation__move`, {
+            property: 'position',
+            to: endPos,
+            dur: 600, // Tốc độ chạy (ms)
+            easing: 'linear',
+            startEvents: 'run'
+          });
+          return el;
+        };
+
+        const halfW = w / 2;
+        const halfH = h / 2;
+
+        // Tạo 4 vận động viên cho 4 cạnh
+        // Top: Chạy ngang
+        const topEl = createRunner('top', length, thickness, `${-halfW} ${halfH} ${zPos}`, `${halfW} ${halfH} ${zPos}`);
+        // Right: Chạy dọc
+        const rightEl = createRunner('right', thickness, length, `${halfW} ${halfH} ${zPos}`, `${halfW} ${-halfH} ${zPos}`);
+        // Bot: Chạy ngang (ngược chiều)
+        const botEl = createRunner('bot', length, thickness, `${halfW} ${-halfH} ${zPos}`, `${-halfW} ${-halfH} ${zPos}`);
+        // Left: Chạy dọc (ngược chiều)
+        const leftEl = createRunner('left', thickness, length, `${-halfW} ${-halfH} ${zPos}`, `${-halfW} ${halfH} ${zPos}`);
+
+        this.el.appendChild(topEl); this.el.appendChild(rightEl); this.el.appendChild(botEl); this.el.appendChild(leftEl);
+
+        // --- LOGIC TIẾP SỨC ---
+        
+        // 1. Khi tìm thấy ảnh -> Hiện Top -> Chạy Top
+        this.el.addEventListener('targetFound', () => {
+          topEl.setAttribute('visible', true);
+          topEl.emit('run');
         });
-        this.target.addEventListener("targetLost", () => {
-          if(this.startTimer) clearTimeout(this.startTimer);
-          this.uiPanel.classList.remove("visible");
+
+        // 2. Khi mất ảnh -> Ẩn hết
+        this.el.addEventListener('targetLost', () => {
+          [topEl, rightEl, botEl, leftEl].forEach(el => {
+            el.setAttribute('visible', false);
+            // Reset vị trí (nếu đang chạy dở)
+            try { el.components.animation__move.animation.currentTime = 0; } catch(e){}
+          });
+        });
+
+        // 3. Chuỗi sự kiện nối tiếp
+        topEl.addEventListener('animationcomplete__move', () => {
+          topEl.setAttribute('visible', false);   // Top ẩn
+          rightEl.setAttribute('visible', true);  // Right hiện
+          rightEl.emit('run');                    // Right chạy
+        });
+
+        rightEl.addEventListener('animationcomplete__move', () => {
+          rightEl.setAttribute('visible', false);
+          botEl.setAttribute('visible', true);
+          botEl.emit('run');
+        });
+
+        botEl.addEventListener('animationcomplete__move', () => {
+          botEl.setAttribute('visible', false);
+          leftEl.setAttribute('visible', true);
+          leftEl.emit('run');
+        });
+
+        leftEl.addEventListener('animationcomplete__move', () => {
+          leftEl.setAttribute('visible', false);
+          topEl.setAttribute('visible', true); // Quay lại Top
+          topEl.emit('run');
         });
       }
     });
-    
-    // Các component phụ trợ cho Model...
+
+    // --- CÁC COMPONENT CŨ ---
+    AFRAME.registerComponent('video-fx', { schema: { opacity: {type: 'number', default: 0.9}, softness: {type: 'number', default: 0.2} }, init: function () { const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256; const ctx = canvas.getContext('2d'); const gradient = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2); const start = Math.max(0, 1.0 - this.data.softness * 2); gradient.addColorStop(0, 'rgba(255, 255, 255, 1)'); gradient.addColorStop(start, 'rgba(255, 255, 255, 1)'); gradient.addColorStop(1, 'rgba(0, 0, 0, 0)'); ctx.fillStyle = gradient; ctx.fillRect(0, 0, canvas.width, canvas.height); const maskTexture = new THREE.CanvasTexture(canvas); this.el.addEventListener('materialtextureloaded', () => { const mesh = this.el.getObject3D('mesh'); if (mesh && mesh.material) { mesh.material.alphaMap = maskTexture; mesh.material.transparent = true; mesh.material.opacity = this.data.opacity; mesh.material.blending = THREE.AdditiveBlending; mesh.material.needsUpdate = true; } }); } });
+    AFRAME.registerComponent("html-overlay-controller", { schema: { delay: {type: "number", default: 1000}, audio: {type: "selector"} }, init() { this.uiPanel = document.getElementById("info-panel"); this.uiTitle = document.getElementById("ui-title"); this.uiDesc = document.getElementById("ui-desc"); this.fullTitle = this.el.getAttribute("data-title") || ""; this.fullDesc = this.el.getAttribute("data-desc") || ""; this.color = this.el.getAttribute("data-color") || "#FFD700"; this.target = this.el.closest("[mindar-image-target]"); this.startTimer = null; this.typingTimer = null; this.target.addEventListener("targetFound", () => this.onFound()); this.target.addEventListener("targetLost", () => this.onLost()); }, onFound() { this.uiTitle.textContent = ""; this.uiDesc.textContent = ""; this.uiPanel.style.borderLeftColor = this.color; this.uiTitle.style.color = this.color; this.startTimer = setTimeout(() => { this.showPanel(); }, this.data.delay); }, onLost() { if (this.startTimer) clearTimeout(this.startTimer); if (this.typingTimer) clearTimeout(this.typingTimer); this.uiPanel.classList.remove("visible"); }, showPanel() { this.uiPanel.classList.add("visible"); playAudio(this.data.audio); let i = 0; const typeLoop = () => { if (i < this.fullTitle.length) { this.uiTitle.textContent += this.fullTitle.charAt(i); i++; this.typingTimer = setTimeout(typeLoop, 30); } else { const descIndex = i - this.fullTitle.length; if (descIndex < this.fullDesc.length) { this.uiDesc.textContent += this.fullDesc.charAt(descIndex); i++; this.typingTimer = setTimeout(typeLoop, 20); } } }; typeLoop(); } });
     AFRAME.registerComponent("reveal-model", { schema: { duration:{type:"number",default:3000}, audio:{type:"selector"}, startScale:{type:"vec3"}, finalScale:{type:"vec3"}, startPos:{type:"vec3"}, finalPos:{type:"vec3"} }, init(){ this.target = this.el.closest("[mindar-image-target]"); this.running = false; this._hardReset(); this.target.addEventListener("targetLost", ()=>this._hardReset()); this.target.addEventListener("targetFound", ()=>this.start()); }, _hardReset(){ this.running = false; this.el.removeAttribute("animation__scale"); this.el.removeAttribute("animation__pos"); const ss = this.data.startScale, sp = this.data.startPos; this.el.setAttribute("scale", `${ss.x} ${ss.y} ${ss.z}`); this.el.setAttribute("position", `${sp.x} ${sp.y} ${sp.z}`); if(this.el.object3D){ this.el.object3D.scale.set(ss.x, ss.y, ss.z); this.el.object3D.position.set(sp.x, sp.y, sp.z); } }, start(){ if(this.running) return; this.running = true; this._hardReset(); playAudio(this.data.audio); const fs = this.data.finalScale, fp = this.data.finalPos; requestAnimationFrame(()=>requestAnimationFrame(()=>{ this.el.setAttribute("animation__scale", { property:"scale", to:`${fs.x} ${fs.y} ${fs.z}`, dur:this.data.duration, easing:"easeOutCubic" }); this.el.setAttribute("animation__pos", { property:"position", to:`${fp.x} ${fp.y} ${fp.z}`, dur:this.data.duration, easing:"easeOutCubic" }); })); } });
     AFRAME.registerComponent("slow-spin", { init(){ this.el.setAttribute("animation__spin", { property:"rotation", to:"0 0 360", loop:true, dur:14000, easing:"linear" }); } });
     AFRAME.registerComponent("transparent-model", { schema:{ opacity:{type:"number",default:0.6} }, init(){ this.el.addEventListener("model-loaded", ()=>{ const op = this.data.opacity; this.el.object3D.traverse(n=>{ if(n.material){ const mats = Array.isArray(n.material) ? n.material : [n.material]; mats.forEach(m=>{ m.transparent = true; m.opacity = op; m.depthWrite = true; m.side = THREE.FrontSide; m.needsUpdate = true; }); } }); }); } });
