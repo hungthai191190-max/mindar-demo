@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const model = document.createElement('a-entity');
       model.setAttribute('gltf-model', `url(${item.modelSrc})`); // GLTF model thì BẮT BUỘC giữ url()
       model.setAttribute('rotation', '90 0 0');
-      model.setAttribute('transparent-model', 'opacity: 0.6');
+      model.setAttribute('transparent-model', 'opacity: 0.8');
       
       modelContainer.appendChild(model);
       targetEl.appendChild(modelContainer);
@@ -80,3 +80,4 @@ document.addEventListener("DOMContentLoaded", () => {
     scene.appendChild(targetEl);
   });
 });
+
