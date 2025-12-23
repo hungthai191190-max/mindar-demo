@@ -1,74 +1,71 @@
-// js/main.js
+/* js/main.js - ĐÃ FIX */
 
 document.addEventListener("DOMContentLoaded", () => {
   const scene = document.querySelector('a-scene');
   const assetsContainer = document.querySelector('a-assets');
 
+  // Hàm tạo Overlay Text (Fix: Truyền string trực tiếp, không dùng url())
+  function createOverlay(item, delay) {
+    const el = document.createElement('a-entity');
+    // CHÚ Ý: Đã bỏ chữ 'url(...)' đi
+    el.setAttribute('html-overlay-controller', `delay: ${delay}; soundText: ${item.audio_text}`);
+    el.setAttribute('data-title', item.title);
+    el.setAttribute('data-desc', item.desc);
+    el.setAttribute('data-color', item.color);
+    return el;
+  }
+
   AR_DATABASE.forEach(item => {
-    // 1. Tạo thẻ bao ngoài (Entity Target)
     const targetEl = document.createElement('a-entity');
     targetEl.setAttribute('mindar-image-target', `targetIndex: ${item.targetIndex}`);
 
-    // --- XỬ LÝ THEO TỪNG LOẠI (TYPE) ---
-    
-    // === LOẠI 1: ẢNH (IMAGE) ===
+    // === LOẠI 1: ẢNH ===
     if (item.type === 'image') {
-      // Overlay Controller
-      const overlay = createOverlay(item, 500);
-      targetEl.appendChild(overlay);
-
-      // Delayed Audio (Thuyết minh)
+      targetEl.appendChild(createOverlay(item, 500));
       if (item.audio_desc) {
         const audioEntity = document.createElement('a-entity');
-        audioEntity.setAttribute('delayed-audio', `sound: url(${item.audio_desc}); delay: 2000`);
+        // CHÚ Ý: Đã bỏ chữ 'url(...)' đi
+        audioEntity.setAttribute('delayed-audio', `sound: ${item.audio_desc}; delay: 2000`);
         targetEl.appendChild(audioEntity);
       }
     }
 
-    // === LOẠI 2: MÔ HÌNH (MODEL) ===
+    // === LOẠI 2: MÔ HÌNH ===
     else if (item.type === 'model') {
-      // Model Entity
       const modelContainer = document.createElement('a-entity');
-      modelContainer.setAttribute('reveal-model', `duration: 3000; sound3D: url(${item.audio_3d}); startScale: 0.001 0.001 0.001; finalScale: 0.6 0.6 0.6; startPos: 0 0.08 0; finalPos: 0 0.32 0`);
+      // CHÚ Ý: Đã bỏ chữ 'url(...)' ở sound3D
+      modelContainer.setAttribute('reveal-model', `duration: 3000; sound3D: ${item.audio_3d}; startScale: 0.001 0.001 0.001; finalScale: 0.6 0.6 0.6; startPos: 0 0.08 0; finalPos: 0 0.32 0`);
       modelContainer.setAttribute('slow-spin', '');
 
       const model = document.createElement('a-entity');
-      model.setAttribute('gltf-model', `url(${item.modelSrc})`);
+      model.setAttribute('gltf-model', `url(${item.modelSrc})`); // GLTF model thì BẮT BUỘC giữ url()
       model.setAttribute('rotation', '90 0 0');
       model.setAttribute('transparent-model', 'opacity: 0.6');
       
       modelContainer.appendChild(model);
       targetEl.appendChild(modelContainer);
-
-      // Overlay (Delay 3000ms)
-      const overlay = createOverlay(item, 3000);
-      targetEl.appendChild(overlay);
+      targetEl.appendChild(createOverlay(item, 3000));
     }
 
     // === LOẠI 3: VIDEO ===
     else if (item.type === 'video') {
-      // Tạo thẻ <video> trong a-assets (quan trọng)
       const vidAsset = document.createElement('video');
       vidAsset.setAttribute('id', item.videoId);
       vidAsset.setAttribute('src', item.videoSrc);
       vidAsset.setAttribute('preload', 'auto');
       vidAsset.setAttribute('loop', 'true');
-      vidAsset.setAttribute('muted', 'true'); // Mute để autoplay
+      vidAsset.setAttribute('muted', 'true');
       vidAsset.setAttribute('playsinline', '');
       vidAsset.setAttribute('webkit-playsinline', '');
       vidAsset.setAttribute('crossorigin', 'anonymous');
       assetsContainer.appendChild(vidAsset);
 
-      // Overlay (Delay 500ms)
-      const overlay = createOverlay(item, 500);
-      targetEl.appendChild(overlay);
+      targetEl.appendChild(createOverlay(item, 500));
 
-      // Video Controller
       const vidControl = document.createElement('a-entity');
       vidControl.setAttribute('video-control', `video: #${item.videoId}; delay: 1500`);
       targetEl.appendChild(vidControl);
 
-      // Video Plane
       const vidPlane = document.createElement('a-video');
       vidPlane.setAttribute('src', `#${item.videoId}`);
       vidPlane.setAttribute('width', '1');
@@ -80,19 +77,6 @@ document.addEventListener("DOMContentLoaded", () => {
       
       targetEl.appendChild(vidPlane);
     }
-
-    // Gắn Target vào Scene
     scene.appendChild(targetEl);
   });
 });
-
-// Hàm tạo Overlay Text (Dùng chung)
-function createOverlay(item, delay) {
-  const el = document.createElement('a-entity');
-  // Lưu ý: url() cho soundText cần xử lý string
-  el.setAttribute('html-overlay-controller', `delay: ${delay}; soundText: url(${item.audio_text})`);
-  el.setAttribute('data-title', item.title);
-  el.setAttribute('data-desc', item.desc);
-  el.setAttribute('data-color', item.color);
-  return el;
-}
