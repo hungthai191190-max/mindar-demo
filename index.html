@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>MindAR – Color Coded UI</title>
+  <title>MindAR – Visual Linking UI</title>
 
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
@@ -31,49 +31,17 @@
     @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
     .loading-text { color: #fff; margin-top: 20px; font-size: 14px; display: none; }
 
-    /* UI PANEL (Compact Mode - Màu sắc sẽ được chỉnh bằng JS) */
+    /* UI PANEL (Compact Mode) */
     #info-panel {
-      position: fixed;
-      bottom: 20px; left: 20px; right: 20px;
-      z-index: 100;
-      
-      background: rgba(10, 10, 10, 0.75); /* Nền tối bán trong suốt */
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      
-      /* Border mặc định, sẽ bị ghi đè bởi JS */
-      border-left: 3px solid #fff; 
-      padding: 10px 15px;
-      border-radius: 6px;
-      color: #fff;
-      
-      max-height: 25%; /* Chỉ chiếm 1/4 màn hình */
-      overflow-y: auto; word-wrap: break-word; white-space: pre-wrap;
-      
-      opacity: 0;
-      transform: translateY(20px);
-      transition: opacity 0.5s ease, transform 0.5s ease;
+      position: fixed; bottom: 20px; left: 20px; right: 20px; z-index: 100;
+      background: rgba(10, 10, 10, 0.75); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      border-left: 3px solid #fff; padding: 10px 15px; border-radius: 6px; color: #fff;
+      max-height: 25%; overflow-y: auto; word-wrap: break-word; white-space: pre-wrap;
+      opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease;
     }
-
     #info-panel.visible { opacity: 1; transform: translateY(0); }
-
-    #ui-title {
-      margin: 0 0 4px 0;
-      font-size: 16px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      line-height: 1.2;
-      /* Màu chữ sẽ được set bởi JS */
-    }
-
-    #ui-desc {
-      margin: 0;
-      font-size: 13px;
-      line-height: 1.4;
-      color: #e0e0e0;
-      text-align: left;
-    }
+    #ui-title { margin: 0 0 4px 0; font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2; }
+    #ui-desc { margin: 0; font-size: 13px; line-height: 1.4; color: #e0e0e0; text-align: left; }
   </style>
 </head>
 
@@ -83,10 +51,7 @@
     <div class="loading-text" id="loading-msg">Đang khởi động Camera...<br>Vui lòng cho phép truy cập!</div>
   </div>
 
-  <div id="info-panel">
-    <div id="ui-title"></div>
-    <div id="ui-desc"></div>
-  </div>
+  <div id="info-panel"><div id="ui-title"></div><div id="ui-desc"></div></div>
 
   <a-scene
     mindar-image="imageTargetSrc: ./targets.mind; filterMinCF:0.0001; filterBeta:0.001; autoStart: false;"
@@ -105,8 +70,10 @@
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
     <a-entity mindar-image-target="targetIndex: 0">
+      <a-entity target-indicator="color: #00E5FF"></a-entity>
+
       <a-entity 
-        html-overlay-controller="delay: 1000; audio: #audio2"
+        html-overlay-controller="delay: 500; audio: #audio2"
         data-title="PHÒNG TRUYỀN THỐNG"
         data-desc="NĂM 1990"
         data-color="#00E5FF" 
@@ -114,6 +81,8 @@
     </a-entity>
 
     <a-entity mindar-image-target="targetIndex: 1">
+      <a-entity target-indicator="color: #FFD700"></a-entity>
+
       <a-entity reveal-model="duration: 3000; audio: #audio2; startScale: 0.001 0.001 0.001; finalScale: 0.6 0.6 0.6; startPos: 0 0.08 0; finalPos: 0 0.32 0" slow-spin>
         <a-entity id="model" gltf-model="url(model.glb)" rotation="90 0 0" transparent-model="opacity: 0.6"></a-entity>
       </a-entity>
@@ -127,6 +96,8 @@
     </a-entity>
 
     <a-entity mindar-image-target="targetIndex: 2" video-on-target="video: #video1; restart: true">
+      <a-entity target-indicator="color: #FFAB00"></a-entity>
+
       <a-video id="video-plane" src="#video1" width="1.0" height="0.5625" position="0 0 0.001" video-fx="opacity: 0.9; softness: 0.3"></a-video>
       
       <a-entity 
@@ -145,7 +116,6 @@
     const startBtn = document.getElementById("start-btn");
     const loadingMsg = document.getElementById("loading-msg");
 
-    // --- LOGIC START ---
     startBtn.addEventListener("click", () => {
       startBtn.style.display = "none"; loadingMsg.style.display = "block";
       const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -153,26 +123,70 @@
       sceneEl.systems["mindar-image-system"].start();
     });
     sceneEl.addEventListener("arReady", () => { startScreen.classList.add("hidden"); });
-    sceneEl.addEventListener("arError", (event) => { loadingMsg.innerHTML = "LỖI CAMERA! Kiểm tra HTTPS."; loadingMsg.style.color = "red"; });
+    sceneEl.addEventListener("arError", (event) => { loadingMsg.innerHTML = "LỖI: Hãy dùng HTTPS hoặc Localhost!"; loadingMsg.style.color = "red"; });
 
     function playAudio(audioEl){ if(!audioEl) return; try{ audioEl.currentTime = 0; audioEl.play().catch(()=>{}); }catch(e){} }
 
-    // --- COMPONENT VIDEO FX (Giữ nguyên) ---
-    AFRAME.registerComponent('video-fx', { schema: { opacity: {type: 'number', default: 0.9}, softness: {type: 'number', default: 0.2} }, init: function () { const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256; const ctx = canvas.getContext('2d'); const gradient = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2); const start = Math.max(0, 1.0 - this.data.softness * 2); gradient.addColorStop(0, 'rgba(255, 255, 255, 1)'); gradient.addColorStop(start, 'rgba(255, 255, 255, 1)'); gradient.addColorStop(1, 'rgba(0, 0, 0, 0)'); ctx.fillStyle = gradient; ctx.fillRect(0, 0, canvas.width, canvas.height); const maskTexture = new THREE.CanvasTexture(canvas); this.el.addEventListener('materialtextureloaded', () => { const mesh = this.el.getObject3D('mesh'); if (mesh && mesh.material) { mesh.material.alphaMap = maskTexture; mesh.material.transparent = true; mesh.material.opacity = this.data.opacity; mesh.material.blending = THREE.AdditiveBlending; mesh.material.needsUpdate = true; } }); } });
+    /* =========================================================
+       COMPONENT: TARGET INDICATOR (VÒNG TRÒN ĐỊNH VỊ)
+       - Tạo ra một vòng tròn bao quanh ảnh
+       - Màu sắc đồng bộ với UI
+       ========================================================= */
+    AFRAME.registerComponent('target-indicator', {
+      schema: {
+        color: {type: 'color', default: '#FFF'}
+      },
+      init: function () {
+        // Tạo vòng tròn (Ring)
+        const ring = document.createElement('a-ring');
+        
+        // Cấu hình vòng tròn
+        ring.setAttribute('radius-inner', '0.55'); // Bán kính trong (lớn hơn 0.5 để bao ngoài ảnh)
+        ring.setAttribute('radius-outer', '0.6');  // Bán kính ngoài (độ dày viền)
+        ring.setAttribute('color', this.data.color);
+        ring.setAttribute('opacity', '0.8');
+        ring.setAttribute('rotation', '-90 0 0');  // Nằm bẹp xuống sàn
+        
+        // Material cho phép nhìn 2 mặt và không bị che khuất
+        ring.setAttribute('material', 'side: double; shader: flat; transparent: true; depthTest: false;');
+        
+        // Animation 1: Pulse Scale (Phập phồng kích thước)
+        ring.setAttribute('animation__pulse', {
+          property: 'scale',
+          from: '1 1 1',
+          to: '1.1 1.1 1.1',
+          dur: 1500,
+          dir: 'alternate',
+          loop: true,
+          easing: 'easeInOutSine'
+        });
 
-    // --- HTML OVERLAY CONTROLLER (NÂNG CẤP MÀU SẮC) ---
+        // Animation 2: Pulse Opacity (Nhấp nháy độ mờ)
+        ring.setAttribute('animation__fade', {
+          property: 'opacity',
+          from: '0.8',
+          to: '0.4',
+          dur: 1500,
+          dir: 'alternate',
+          loop: true,
+          easing: 'easeInOutSine'
+        });
+
+        this.el.appendChild(ring);
+      }
+    });
+
+    // --- CÁC COMPONENT CŨ (GIỮ NGUYÊN) ---
+    AFRAME.registerComponent('video-fx', { schema: { opacity: {type: 'number', default: 0.9}, softness: {type: 'number', default: 0.2} }, init: function () { const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256; const ctx = canvas.getContext('2d'); const gradient = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2); const start = Math.max(0, 1.0 - this.data.softness * 2); gradient.addColorStop(0, 'rgba(255, 255, 255, 1)'); gradient.addColorStop(start, 'rgba(255, 255, 255, 1)'); gradient.addColorStop(1, 'rgba(0, 0, 0, 0)'); ctx.fillStyle = gradient; ctx.fillRect(0, 0, canvas.width, canvas.height); const maskTexture = new THREE.CanvasTexture(canvas); this.el.addEventListener('materialtextureloaded', () => { const mesh = this.el.getObject3D('mesh'); if (mesh && mesh.material) { mesh.material.alphaMap = maskTexture; mesh.material.transparent = true; mesh.material.opacity = this.data.opacity; mesh.material.blending = THREE.AdditiveBlending; mesh.material.needsUpdate = true; } }); } });
     AFRAME.registerComponent("html-overlay-controller", {
       schema: { delay: {type: "number", default: 1000}, audio: {type: "selector"} },
       init() {
         this.uiPanel = document.getElementById("info-panel");
         this.uiTitle = document.getElementById("ui-title");
         this.uiDesc = document.getElementById("ui-desc");
-        
-        // Lấy dữ liệu
         this.fullTitle = this.el.getAttribute("data-title") || "";
         this.fullDesc = this.el.getAttribute("data-desc") || "";
-        this.color = this.el.getAttribute("data-color") || "#FFD700"; // Mặc định Vàng nếu không set
-
+        this.color = this.el.getAttribute("data-color") || "#FFD700";
         this.target = this.el.closest("[mindar-image-target]");
         this.startTimer = null; this.typingTimer = null;
         this.target.addEventListener("targetFound", () => this.onFound());
@@ -180,11 +194,8 @@
       },
       onFound() {
         this.uiTitle.textContent = ""; this.uiDesc.textContent = "";
-        
-        // CẬP NHẬT MÀU SẮC NGAY KHI TÌM THẤY
         this.uiPanel.style.borderLeftColor = this.color;
         this.uiTitle.style.color = this.color;
-        
         this.startTimer = setTimeout(() => { this.showPanel(); }, this.data.delay);
       },
       onLost() {
@@ -194,10 +205,7 @@
       },
       showPanel() {
         this.uiPanel.classList.add("visible");
-        
-        // Phát nhạc khi chữ bắt đầu hiện (như yêu cầu cho Target 0)
         playAudio(this.data.audio);
-        
         let i = 0;
         const typeLoop = () => {
           if (i < this.fullTitle.length) {
@@ -212,7 +220,6 @@
       }
     });
 
-    // --- CÁC COMPONENT MODEL (Giữ nguyên) ---
     AFRAME.registerComponent("reveal-model", { schema: { duration:{type:"number",default:3000}, audio:{type:"selector"}, startScale:{type:"vec3"}, finalScale:{type:"vec3"}, startPos:{type:"vec3"}, finalPos:{type:"vec3"} }, init(){ this.target = this.el.closest("[mindar-image-target]"); this.running = false; this._hardReset(); this.target.addEventListener("targetLost", ()=>this._hardReset()); this.target.addEventListener("targetFound", ()=>this.start()); }, _hardReset(){ this.running = false; this.el.removeAttribute("animation__scale"); this.el.removeAttribute("animation__pos"); const ss = this.data.startScale, sp = this.data.startPos; this.el.setAttribute("scale", `${ss.x} ${ss.y} ${ss.z}`); this.el.setAttribute("position", `${sp.x} ${sp.y} ${sp.z}`); if(this.el.object3D){ this.el.object3D.scale.set(ss.x, ss.y, ss.z); this.el.object3D.position.set(sp.x, sp.y, sp.z); } }, start(){ if(this.running) return; this.running = true; this._hardReset(); playAudio(this.data.audio); const fs = this.data.finalScale, fp = this.data.finalPos; requestAnimationFrame(()=>requestAnimationFrame(()=>{ this.el.setAttribute("animation__scale", { property:"scale", to:`${fs.x} ${fs.y} ${fs.z}`, dur:this.data.duration, easing:"easeOutCubic" }); this.el.setAttribute("animation__pos", { property:"position", to:`${fp.x} ${fp.y} ${fp.z}`, dur:this.data.duration, easing:"easeOutCubic" }); })); } });
     AFRAME.registerComponent("slow-spin", { init(){ this.el.setAttribute("animation__spin", { property:"rotation", to:"0 0 360", loop:true, dur:14000, easing:"linear" }); } });
     AFRAME.registerComponent("transparent-model", { schema:{ opacity:{type:"number",default:0.6} }, init(){ this.el.addEventListener("model-loaded", ()=>{ const op = this.data.opacity; this.el.object3D.traverse(n=>{ if(n.material){ const mats = Array.isArray(n.material) ? n.material : [n.material]; mats.forEach(m=>{ m.transparent = true; m.opacity = op; m.depthWrite = true; m.side = THREE.FrontSide; m.needsUpdate = true; }); } }); }); } });
