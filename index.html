@@ -19,41 +19,6 @@
 
   <script src="./js/database.js"></script>   <script src="./js/components.js"></script> <script src="./js/main.js"></script>       </head>
 
-  <script>
-    // Component tạo hiệu ứng ánh sáng xoay dưới chân mô hình
-    AFRAME.registerComponent('rotating-light', {
-      init: function() {
-        const el = document.createElement('a-image');
-        // Đường dẫn ảnh: images/image1.png (Bạn cần đảm bảo file này tồn tại)
-        el.setAttribute('src', 'assets/images/image1.png'); 
-        el.setAttribute('width', '2.5'); // Kích thước rộng hơn target một chút để tỏa sáng
-        el.setAttribute('height', '2.5');
-        // Vị trí: 0 0.01 0 để nằm ngay trên bề mặt target nhưng dưới mô hình 3D
-        el.setAttribute('position', '0 0.01 0'); 
-        el.setAttribute('rotation', '-90 0 0'); // Đặt nằm ngang trên mặt phẳng
-        // Blending additive giúp ảnh hòa trộn như ánh sáng, depthWrite false để không che lấp
-        el.setAttribute('material', 'transparent: true; opacity: 0.8; blending: additive; depthWrite: false');
-        
-        // Animation xoay tròn siêu nhanh (300ms/vòng)
-        el.setAttribute('animation', 'property: rotation; from: -90 0 0; to: -90 360 0; loop: true; dur: 300; easing: linear');
-        
-        this.el.appendChild(el);
-      }
-    });
-
-    // Component tự động gắn hiệu ứng vào các entity có mindar-image-target
-    AFRAME.registerComponent('auto-light-effect', {
-      init: function() {
-        this.el.addEventListener('child-attached', (e) => {
-          const node = e.detail.el;
-          if (node.nodeName === 'A-ENTITY' && node.hasAttribute('mindar-image-target')) {
-            node.setAttribute('rotating-light', '');
-          }
-        });
-      }
-    });
-  </script>
-
 <body>
   <div id="info-panel"><div id="ui-title"></div><div id="ui-desc"></div></div>
 
