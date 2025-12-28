@@ -18,6 +18,9 @@ document.addEventListener("DOMContentLoaded", () => {
   AR_DATABASE.forEach(item => {
     const targetEl = document.createElement('a-entity');
     targetEl.setAttribute('mindar-image-target', `targetIndex: ${item.targetIndex}`);
+    
+    // Gắn hiệu ứng ánh sáng cho TẤT CẢ các target (hoặc chỉ model nếu muốn)
+    targetEl.setAttribute('rotating-light', '');
 
     // === LOẠI 1: ẢNH ===
     if (item.type === 'image') {
@@ -80,4 +83,3 @@ document.addEventListener("DOMContentLoaded", () => {
     scene.appendChild(targetEl);
   });
 });
-

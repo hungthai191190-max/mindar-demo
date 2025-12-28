@@ -100,28 +100,27 @@ AFRAME.registerComponent('delayed-audio', {
 // 5. ROTATING LIGHT (Hiệu ứng ánh sáng xoay dưới chân mô hình)
 AFRAME.registerComponent('rotating-light', {
   init: function() {
-    const el = document.createElement('a-image');
-    // Đảm bảo file assets/images/image1.png tồn tại
-    el.setAttribute('src', 'assets/images/image1.png'); 
-    el.setAttribute('width', '2.5'); 
-    el.setAttribute('height', '2.5');
-    el.setAttribute('position', '0 0.01 0'); // Nằm ngay trên mặt target
-    el.setAttribute('rotation', '-90 0 0'); 
-    el.setAttribute('material', 'transparent: true; opacity: 0.8; blending: additive; depthWrite: false');
-    el.setAttribute('animation', 'property: rotation; from: -90 0 0; to: -90 360 0; loop: true; dur: 3000; easing: linear'); // Đã chỉnh tốc độ chậm lại chút (3000ms) cho mượt hơn
-    this.el.appendChild(el);
-  }
-});
+    // Tạo một container để chứa các tấm ảnh và xoay container này
+    const container = document.createElement('a-entity');
+    container.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear');
 
-// 6. AUTO LIGHT EFFECT (Tự động gắn hiệu ứng vào các target)
-AFRAME.registerComponent('auto-light-effect', {
-  init: function() {
-    this.el.addEventListener('child-attached', (e) => {
-      const node = e.detail.el;
-      if (node.nodeName === 'A-ENTITY' && node.hasAttribute('mindar-image-target')) {
-        node.setAttribute('rotating-light', '');
-      }
-    });
+    // Hàm tạo tấm ảnh ánh sáng
+    const createBeam = (rotationY) => {
+      const el = document.createElement('a-image');
+      el.setAttribute('src', 'assets/images/image1.png');
+      el.setAttribute('width', '2.5');
+      el.setAttribute('height', '2.5');
+      el.setAttribute('position', '0 1.25 0'); // Đẩy lên để đáy chạm đất
+      el.setAttribute('rotation', `0 ${rotationY} 0`); // Xoay tấm ảnh theo trục Y
+      el.setAttribute('material', 'transparent: true; opacity: 0.8; blending: additive; depthWrite: false; side: double');
+      return el;
+    };
+
+    // Tạo 2 tấm ảnh chéo nhau 90 độ (hình chữ thập) để tạo cảm giác 3D từ mọi góc nhìn
+    container.appendChild(createBeam(0));
+    container.appendChild(createBeam(90));
+
+    this.el.appendChild(container);
   }
 });
 
