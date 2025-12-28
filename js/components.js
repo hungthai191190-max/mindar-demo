@@ -112,7 +112,7 @@ AFRAME.registerComponent('rotating-light', {
       el.setAttribute('width', '0.4');  // Thu nhỏ chiều rộng để vừa vặn dưới chân model
       el.setAttribute('height', '0.35'); // Chiều cao 0.35 để vừa chạm tới đáy model (model ở độ cao 0.32)
       el.setAttribute('position', '0 0.175 0'); // Đặt tâm ở 1/2 chiều cao để đáy ảnh chạm đất (0)
-      el.setAttribute('rotation', `0 ${rotationY} 0`); // Xoay tấm ảnh theo trục Y
+      el.setAttribute('rotation', `${rotationY} 0 0`); // Xoay tấm ảnh theo trục Y
       el.setAttribute('material', 'transparent: true; opacity: 0.8; blending: additive; depthWrite: false; side: double');
       return el;
     };
