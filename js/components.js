@@ -102,15 +102,16 @@ AFRAME.registerComponent('rotating-light', {
   init: function() {
     // Tạo một container để chứa các tấm ảnh và xoay container này
     const container = document.createElement('a-entity');
-    container.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear');
+    // Tăng tốc độ gấp 10 lần (8000ms -> 800ms)
+    container.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 800; easing: linear');
 
     // Hàm tạo tấm ảnh ánh sáng
     const createBeam = (rotationY) => {
       const el = document.createElement('a-image');
       el.setAttribute('src', 'assets/images/image1.png');
-      el.setAttribute('width', '2.5');
-      el.setAttribute('height', '2.5');
-      el.setAttribute('position', '0 1.25 0'); // Đẩy lên để đáy chạm đất
+      el.setAttribute('width', '0.4');  // Thu nhỏ chiều rộng để vừa vặn dưới chân model
+      el.setAttribute('height', '0.35'); // Chiều cao 0.35 để vừa chạm tới đáy model (model ở độ cao 0.32)
+      el.setAttribute('position', '0 0.175 0'); // Đặt tâm ở 1/2 chiều cao để đáy ảnh chạm đất (0)
       el.setAttribute('rotation', `0 ${rotationY} 0`); // Xoay tấm ảnh theo trục Y
       el.setAttribute('material', 'transparent: true; opacity: 0.8; blending: additive; depthWrite: false; side: double');
       return el;
