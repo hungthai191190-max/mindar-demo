@@ -97,34 +97,6 @@ AFRAME.registerComponent('delayed-audio', {
   }
 });
 
-// 5. ROTATING LIGHT (Hiệu ứng ánh sáng xoay dưới chân mô hình)
-AFRAME.registerComponent('rotating-light', {
-  init: function() {
-    // Tạo một container để chứa các tấm ảnh và xoay container này
-    const container = document.createElement('a-entity');
-    // Tăng tốc độ gấp 10 lần (8000ms -> 800ms)
-    container.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 800; easing: linear');
-
-    // Hàm tạo tấm ảnh ánh sáng
-    const createBeam = (rotationY) => {
-      const el = document.createElement('a-image');
-      el.setAttribute('src', 'assets/images/image1.png');
-      el.setAttribute('width', '0.4');  // Thu nhỏ chiều rộng để vừa vặn dưới chân model
-      el.setAttribute('height', '0.35'); // Chiều cao 0.35 để vừa chạm tới đáy model (model ở độ cao 0.32)
-      el.setAttribute('position', '0 0.175 0'); // Đặt tâm ở 1/2 chiều cao để đáy ảnh chạm đất (0)
-      el.setAttribute('rotation', `${rotationY} 0 0`); // Xoay tấm ảnh theo trục Y
-      el.setAttribute('material', 'transparent: true; opacity: 0.8; blending: additive; depthWrite: false; side: double');
-      return el;
-    };
-
-    // Tạo 2 tấm ảnh chéo nhau 90 độ (hình chữ thập) để tạo cảm giác 3D từ mọi góc nhìn
-    container.appendChild(createBeam(0));
-    container.appendChild(createBeam(90));
-
-    this.el.appendChild(container);
-  }
-});
-
 // 3. REVEAL MODEL
 AFRAME.registerComponent("reveal-model", {
   schema: {
